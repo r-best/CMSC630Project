@@ -6,41 +6,46 @@ class Image:
     COLOR_RED = 0
     COLOR_GREEN = 1
     COLOR_BLUE = 2
-    COLOR_GRAYSCALE = 3
+    COLOR_RGB = 3
+    COLOR_GRAYSCALE = 4
 
     def __init__(self, matrix):
-        self.matrix = matrix
-        self.matrix_gray = None
-        self.histogram = None
-        self.histogram_gray = None
+        self.matrix = {
+            self.COLOR_RED:         matrix[:,:,self.COLOR_RED],
+            self.COLOR_GREEN:       matrix[:,:,self.COLOR_GREEN],
+            self.COLOR_BLUE:        matrix[:,:,self.COLOR_BLUE],
+            self.COLOR_RGB:         matrix,
+            self.COLOR_GRAYSCALE:   None
+        }
+        self.histogram = {
+            self.COLOR_RED:         None,
+            self.COLOR_GREEN:       None,
+            self.COLOR_BLUE:        None,
+            self.COLOR_RGB:         None,
+            self.COLOR_GRAYSCALE:   None
+        }
 
-    def getHistogram(self, color=None):
-        if color == self.COLOR_GRAYSCALE:
-            if self.histogram_gray is None:
-                hist = np.zeros((255))
-                for row in self.getGrayscale():
-                    for column in row:
-                        hist[column] += 1
-                self.histogram_gray = hist
-            return self.histogram_gray
-        else:
-            if self.histogram is None:
-                hist = np.zeros((255,3))
-                for row in self.getMatrix():
-                    for column in row:
-                        hist[column[0]][0] += 1
-                        hist[column[1]][1] += 1
-                        hist[column[2]][2] += 1
-                self.histogram = hist
-            return self.histogram
-    
+    def getHistogram(self, color=self.COLOR_RGB):
+        if self.histogram[color] is None: # If this color hasn't been calculated yet, do it
+            if color == self.COLOR_RGB: # RGB is just stack of R, G, and B (three single-channels)
+                self.histogram[color] = np.stack((
+                    self.getHistogram(self.COLOR_RED),
+                    self.getHistogram(self.COLOR_GREEN),
+                    self.getHistogram(self.COLOR_BLUE),
+                ), axis=2)
+            else: # The single-channel histograms can be calculated as follows
+                self.histogram[color] = np.zeros((255,1))
+                for row in self.getMatrix(color):
+                    for pixel in row:
+                        self.histogram[color][pixel] += 1
+        
+        return self.histogram[color]
+
     def getMatrix(self, color=None):
         if color == self.COLOR_GRAYSCALE:
             return self.getGrayscale()
-        if color is not None:
-            return self.matrix[:,:,color]
-        return self.matrix
-    
+        return self.matrix[color]
+
     def getGrayscale(self, luminosity=False):
         """Returns a grayscale version of the RGB image by
         averaging the three color channels. If the `luminosity`
@@ -55,14 +60,14 @@ class Image:
             ndarray: A single channel matrix of shape (height, width)
                 representing the pixel intensities
         """
-        if self.matrix_gray is None:
+        if self.matrix[self.COLOR_GRAYSCALE] is None:
             if luminosity:
                 w = [0.30, 0.59, 0.11]
             else:
                 w = [0.33, 0.33, 0.33]
-            self.matrix_gray = np.sum(np.multiply(self.matrix, w), axis=2)
+            self.matrix[self.COLOR_GRAYSCALE] = np.sum(np.multiply(self.matrix[self.COLOR_RGB], w), axis=2)
 
-        return self.matrix_gray
+        return self.matrix[self.COLOR_GRAYSCALE]
 
 
 def loadImages(path):
