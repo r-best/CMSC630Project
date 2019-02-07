@@ -3,6 +3,10 @@ import cv2
 import numpy as np
 
 class Image:
+    """Represents an image and provides methods for interacting
+    with and manipulating it
+    """
+    # CLASS CONSTANTS
     COLOR_RED = 0
     COLOR_GREEN = 1
     COLOR_BLUE = 2
@@ -26,6 +30,16 @@ class Image:
         }
 
     def getHistogram(self, color=self.COLOR_RGB):
+        """Returns a histogram of the Image's pixel values.
+
+        Arguments:
+            color (int): Desired color channel(s), see class color constants
+        
+        Returns:
+            ndarray: A numpy array where each array[x] is the number of pixels
+                of value x. If multiple color channels are used, they will be
+                indexed as array[x][channel].
+        """
         if self.histogram[color] is None: # If this color hasn't been calculated yet, do it
             if color == self.COLOR_RGB: # RGB is just stack of R, G, and B (three single-channels)
                 self.histogram[color] = np.stack((
@@ -42,6 +56,17 @@ class Image:
         return self.histogram[color]
 
     def getMatrix(self, color=None):
+        """Returns the Image's pixel matrix with
+        the requested color channels
+
+        Arguments:
+            color (int): Desired color channel(s), see class color constants
+        
+        Returns:
+            ndarray: A matrix of shape (height, width, num_channels)
+                representing the pixels of the Image
+        """
+            
         if color == self.COLOR_GRAYSCALE:
             return self.getGrayscale()
         return self.matrix[color]
@@ -75,26 +100,25 @@ class Image:
 
         return self.matrix[self.COLOR_GRAYSCALE]
 
+    @staticmethod
+    def fromFile(path):
+        """Takes in a filepath and loads it as an image,
+        recursing down if the path is a directory
 
-def loadImages(path):
-    """Takes in a filepath and loads all of the images
-    present in it, recursing down if the file is a directory
-
-    Arguments:
-        path (str): The path of the file/directory
-    
-    Returns:
-        list: A list of Image objects created from the images
-            in the directory
-    """
-    images = list()
-    if os.path.isdir(path):
-        for f in os.listdir(path):
-            images += loadImages(os.path.join(path, f))
-    else:
-        rgb_matrix = cv2.imread(path)
-        if rgb_matrix is not None:
-            images.append(Image(rgb_matrix))
+        Arguments:
+            path (str): The path of the file/directory
+        
+        Returns:
+            list: A list of new Image objects
+        """
+        images = list()
+        if os.path.isdir(path):
+            for f in os.listdir(path):
+                images += loadImages(os.path.join(path, f))
         else:
-            print(f"Error reading file {path}, skipping")
-    return images
+            rgb_matrix = cv2.imread(path)
+            if rgb_matrix is not None:
+                images.append(Image(rgb_matrix))
+            else:
+                print(f"Error reading file {path}, skipping")
+        return images

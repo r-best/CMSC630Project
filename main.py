@@ -1,5 +1,5 @@
-from cmsc630 import Image, loadImages
+from cmsc630 import Image
 import matplotlib.pyplot as plt
 
-x = loadImages("./train")
+x = Image.fromFile("./train")
 print(x[0].shape)

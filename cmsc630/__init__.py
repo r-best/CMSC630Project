@@ -1,1 +1,1 @@
-from .Image import Image, loadImages
+from .Image import Image
