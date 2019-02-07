@@ -1,4 +1,4 @@
-from cmsc630.part1 import Image, loadImages
+from cmsc630 import Image, loadImages
 import matplotlib.pyplot as plt
 
 x = loadImages("./train")
