@@ -60,19 +60,19 @@ def loadImages(path):
 
     Arguments:
         path (str): The path of the file/directory
-        color (const): The desired color channel(s) of the image,
-            should be one of the constants in the Image class
     
     Returns:
-        list: A list of numpy ndarrays of shape (height, width, 3),
-            representing the images present in the directory
+        list: A list of Image objects created from the images
+            in the directory
     """
     images = list()
     if os.path.isdir(path):
         for f in os.listdir(path):
             images += loadImages(os.path.join(path, f))
     else:
-        image = cv2.imread(path)
-        if image is not None:
-            images.append(image)
+        rgb_matrix = cv2.imread(path)
+        if rgb_matrix is not None:
+            images.append(Image(rgb_matrix))
+        else:
+            print(f"Error reading file {path}, skipping")
     return images
