@@ -33,7 +33,7 @@ class Image:
                     self.getHistogram(self.COLOR_GREEN),
                     self.getHistogram(self.COLOR_BLUE),
                 ), axis=2)
-            else: # The single-channel histograms can be calculated as follows
+            else: # The single-channel histograms (R, G, B, Gray) can be calculated as follows
                 self.histogram[color] = np.zeros((255,1))
                 for row in self.getMatrix(color):
                     for pixel in row:
@@ -46,21 +46,27 @@ class Image:
             return self.getGrayscale()
         return self.matrix[color]
 
-    def getGrayscale(self, luminosity=False):
+    def getGrayscale(self, luminosity=False, force=False):
         """Returns a grayscale version of the RGB image by
         averaging the three color channels. If the `luminosity`
         flag is set, different weights are used instead to better
         reflect human perception, see 
-        https://www.tutorialspoint.com/dip/grayscale_to_rgb_conversion.htm
+        https://www.tutorialspoint.com/dip/grayscale_to_rgb_conversion.htm.
+        On subsequent calls the matrix calculated in the first call is
+        returned again unless the `force` flag is set to save on computation
+        time, you should only need to set `force` if you wish to recalculate
+        the matrix with a different value of `luminosity`.
 
         Arguments:
             luminosity (boolean): Boolean flag to use luminosity weights
+            force (boolean): Overrides lazy loading to recalculate grayscale
+                matrix regardless of if one is already present in memory
         
         Returns:
             ndarray: A single channel matrix of shape (height, width)
                 representing the pixel intensities
         """
-        if self.matrix[self.COLOR_GRAYSCALE] is None:
+        if self.matrix[self.COLOR_GRAYSCALE] is None or force:
             if luminosity:
                 w = [0.30, 0.59, 0.11]
             else:
