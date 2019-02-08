@@ -6,12 +6,16 @@ class Image:
     """Represents an image and provides methods for interacting
     with and manipulating it
     """
-    # CLASS CONSTANTS
+    # CLASS COLOR CONSTANTS
     COLOR_RED = 0
     COLOR_GREEN = 1
     COLOR_BLUE = 2
     COLOR_RGB = 3
     COLOR_GRAYSCALE = 4
+    
+    # CLASS FILTER CONSTANTS
+    FILTER_LINEAR = "linear"
+    FILTER_MEDIAN = "median"
 
     def __init__(self, matrix):
         self.matrix = {
@@ -66,9 +70,15 @@ class Image:
             ndarray: A matrix of shape (height, width, num_channels)
                 representing the pixels of the Image
         """
-            
-        if color == self.COLOR_GRAYSCALE:
-            return self.getGrayscale()
+        if self.matrix[color] is None:
+            if color == self.COLOR_GRAYSCALE:
+                return self.getGrayscale()
+            if color == self.COLOR_RGB:
+                self.matrix[color] = np.stack((
+                    self.getHistogram(self.COLOR_RED),
+                    self.getHistogram(self.COLOR_GREEN),
+                    self.getHistogram(self.COLOR_BLUE),
+                ), axis=2)
         return self.matrix[color]
 
     def getGrayscale(self, luminosity=False, force=False):
@@ -99,9 +109,39 @@ class Image:
             self.matrix[self.COLOR_GRAYSCALE] = np.sum(np.multiply(self.matrix[self.COLOR_RGB], w), axis=2)
 
         return self.matrix[self.COLOR_GRAYSCALE]
+    
+    def makeSaltnPepperNoise():
+        """
+        """
+        # Add salt & pepper noise to R, G, and B
+        return
+    
+    def makeGaussianNoise():
+        """
+        """
+        # Add gaussian noise to R, G, and B
+        return
+    
+    def equalize(color=Image.COLOR_RED):
+        """
+
+        Returns:
+            Image: A new Image object that has been equalized
+        """
+        return
+    
+    def quantize():
+        return
+    
+    def applyFilter(filter=None):
+        """
+        """
+        if filter is None:
+            return "Please specify a filter to use"
+        return
 
     @staticmethod
-    def fromFile(path):
+    def fromDir(path):
         """Takes in a filepath and loads it as an image,
         recursing down if the path is a directory
 
