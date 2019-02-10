@@ -257,12 +257,91 @@ class Image:
         return B.matrix[color]
 
     
-    def applyFilter(self, filter=None):
-        """
+    def applyFilter(self, filter=None, color=3):
+        """Takes in a filter and applies it to each pixel of the Image, producing a new Image
+        as output. The filter must be a square 2D array-like of odd degree (i.e. has a clear
+        center pixel). However, non-square filters can be acheived by simply setting the entries
+        you don't need to zero.
+
+        Filter Examples:
+            >[[ 0 0 1 0 0 ]
+            > [ 0 0 1 0 0 ]     5x5 filter that emphasizes the
+            > [ 0 0 1 0 0 ]     vertical and ignores everything else
+            > [ 0 0 1 0 0 ]
+            > [ 0 0 1 0 0 ]]
+
+            >[[ 2 0 1 ]
+            > [ 0 1 0 ]         3x3 filter that emphasizes diagonals
+            > [ 2 0 1 ]]        with a higher preference to those on the left
+
+            >[[ -1 -1 -1 ]
+            > [ -1  5 -1 ]      3x3 filter that penalizes everything but the
+            > [ -1 -1 -1 ]]     center pixel, which it emphasizes heavily
+
+        Arguments:
+            filter: A 2D square array-like of weights to pass over the image pixel by pixel
+            color (int): Desired color channel(s), see class color constants
+        
+        Returns:
+            A new copy of this Image object with the filter applied to the desired color channel(s)
         """
         if filter is None:
             return "Please specify a filter to use"
-        return
+
+        filter = np.array(filter)
+
+        if filter.shape[0] % 2 == 0 or filter.shape[1] % 2 == 0:
+            return "Filter must have a clear center, if you want a non-square filter try padding it with zeroes"
+
+        B = self.copy()
+
+        # If we want to apply filter to RGB, process R, G, and B separately and remash them into RGB
+        # TODO Parallelize this?
+        if color == self.COLOR_RGB:
+            B.matrix[self.COLOR_RED] = self._applyFilter(B, filter, color=self.COLOR_RED)
+            B.matrix[self.COLOR_GREEN] = self._applyFilter(B, filter, color=self.COLOR_GREEN)
+            B.matrix[self.COLOR_BLUE] = self._applyFilter(B, filter, color=self.COLOR_BLUE)
+            B.matrix[self.COLOR_RGB] = np.stack((
+                    B.getMatrix(self.COLOR_RED),
+                    B.getMatrix(self.COLOR_GREEN),
+                    B.getMatrix(self.COLOR_BLUE),
+                ), axis=2)
+        # Else we only want a single channel, so just do it & return it
+        else:
+            B.matrix[color] = self._applyFilter(B, filter, color=color)
+
+        return B
+    def _applyFilter(self, B, filter, color):
+        """Helper function for `Image.applyFilter()`, performs the math to apply the filter to a
+        single color channel
+
+        Arguments:
+            B (Image): The new copy Image produced in `Image.quantize()`
+            filter (ndarray): A 2D square ndarray of weights to pass over the image pixel by pixel
+            color (int): Desired color channel(s), see class color constants
+        
+        Returns:
+            ndarray: The color channel of B that has been altered
+        """
+        width_left = int(filter.shape[0]/2)
+        width_right = filter.shape[1] - width_left - 1
+        height_top = int(filter.shape[1]/2)
+        height_bottom = filter.shape[0] - height_top - 1
+        
+        mat = self.getMatrix(color)
+        for i in range(height_top, mat.shape[0]-height_bottom):
+            for j in range(width_left, mat.shape[1]-width_right):
+                B.matrix[color][i,j] = np.sum(np.multiply(
+                    self.matrix[color][i-width_left:i+width_right+1, j-height_top:j+height_top+1],
+                    filter
+                ))
+                if B.matrix[color][i,j] < 0:
+                    np.add(B.matrix[color], -1*np.min(B.matrix[color]))
+                if B.matrix[color][i,j] > 255:
+                    scale = 255/np.max(B.matrix[color])
+                    np.multiply(B.matrix[color], scale)
+
+        return B.matrix[color]
 
     @staticmethod
     def fromDir(path):
