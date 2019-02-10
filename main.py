@@ -24,7 +24,8 @@ def display(img):
 
 
 x = Image.fromDir("./test/1.png")[0]
-y = x.quantize(delta=122, technique=Image.QUANT_MEDIAN)#, color=Image.COLOR_RED)
+# y = x.quantize(delta=122, technique=Image.QUANT_MEDIAN)#, color=Image.COLOR_RED)
+y = x.equalize()
 
 # print(x.getMatrix(color=Image.COLOR_GRAYSCALE))
 # print(y.matrix[Image.COLOR_GRAYSCALE])

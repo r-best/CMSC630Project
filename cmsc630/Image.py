@@ -129,12 +129,53 @@ class Image:
         return
     
     def equalize(self, color=3):
-        """
+        """Returns a new copy of this Image object that has been equalized
+        on the desired channel
+
+        Arguments:
+            color (int): Desired color channel(s), see class color constants
 
         Returns:
-            Image: A new Image object that has been equalized
+            Image: A new copy of the original image, equalized according to parameters
         """
-        return
+        B = self.copy()
+
+        # If we want to equalize RGB, equalize R, G, and B separately and remash them into RGB
+        # TODO Parallelize this?
+        if color == self.COLOR_RGB:
+            B.matrix[self.COLOR_RED] = self._equalize(B, color=self.COLOR_RED)
+            B.matrix[self.COLOR_GREEN] = self._equalize(B, color=self.COLOR_GREEN)
+            B.matrix[self.COLOR_BLUE] = self._equalize(B, color=self.COLOR_BLUE)
+            B.matrix[self.COLOR_RGB] = np.stack((
+                    B.getMatrix(self.COLOR_RED),
+                    B.getMatrix(self.COLOR_GREEN),
+                    B.getMatrix(self.COLOR_BLUE),
+                ), axis=2)
+        # Else we only want a single channel, so just do it & return it
+        else:
+            B.matrix[color] = self._equalize(B, color)
+
+        return B
+    def _equalize(self, B, color):
+        """Helper function for `Image.equalize()`, performs the math to equalize a
+        single color channel using the algorithm described at
+        https://www.tutorialspoint.com/dip/histogram_equalization.htm
+
+        Arguments:
+            B (Image): The new copy Image produced in `Image.equalize()`
+            color (int): Desired color channel(s), see class color constants
+        
+        Returns:
+            ndarray: The color channel of B that has been equalized
+        """
+        cdf = np.zeros(255, dtype="int")
+        num_pixels = np.sum(self.getHistogram(color))
+        total = 0
+        for i, level in enumerate(self.getHistogram(color)):
+            total += level/num_pixels
+            cdf[i] = int(total * 255)
+        
+        return cdf[B.getMatrix(color)]
     
     def quantize(self, delta=16, technique='uniform', color=3):
         """Returns a new copy of this Image object that has been quantized
