@@ -2,6 +2,7 @@ import os
 import cv2
 import copy
 import numpy as np
+import pathos.pools as pp
 
 class Image:
     """Represents an image and provides methods for interacting
@@ -327,19 +328,32 @@ class Image:
         width_right = filter.shape[1] - width_left - 1
         height_top = int(filter.shape[1]/2)
         height_bottom = filter.shape[0] - height_top - 1
-        
+
         mat = self.getMatrix(color)
-        for i in range(height_top, mat.shape[0]-height_bottom):
+
+        def process_row(i):
+            print(f"Applying filter to row {i}")
+            row = B.matrix[color][i]
             for j in range(width_left, mat.shape[1]-width_right):
-                B.matrix[color][i,j] = np.sum(np.multiply(
-                    self.matrix[color][i-width_left:i+width_right+1, j-height_top:j+height_top+1],
+                row[j] = np.sum(np.multiply(
+                    self.matrix[color][i-width_left:i+width_right+1, j-height_top:j+height_bottom+1],
                     filter
                 ))
-                if B.matrix[color][i,j] < 0:
-                    np.add(B.matrix[color], -1*np.min(B.matrix[color]))
-                if B.matrix[color][i,j] > 255:
-                    scale = 255/np.max(B.matrix[color])
-                    np.multiply(B.matrix[color], scale)
+            print(f"Finished row {i}")
+            return row
+
+        p = pp.ProcessPool()
+        B.matrix[color] = np.vstack((
+            B.matrix[color][0:height_top],
+            p.map(process_row, range(height_top, mat.shape[0]-height_bottom)),
+            B.matrix[color][mat.shape[0]-height_bottom:]
+        ))
+
+        if np.min(B.matrix[color]) < 0:
+            np.add(B.matrix[color], -1*np.min(B.matrix[color]))
+        if np.max(B.matrix[color]) > 255:
+            scale = 255/np.max(B.matrix[color])
+            np.multiply(B.matrix[color], scale)
 
         return B.matrix[color]
 

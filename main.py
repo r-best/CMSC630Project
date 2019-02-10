@@ -30,6 +30,10 @@ x = Image.fromDir("./test/1.png")[0]
 #                    [ 0, 1, 1 ],
 #                    [ 0, 0, 0 ]])
 
+filter = np.zeros((401, 401))
+filter[400, 400] = 1
+y = x.applyFilter(filter)
+
 display(y)
 
 # x = np.array([5, 2, 6, 3])
