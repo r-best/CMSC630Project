@@ -152,8 +152,11 @@ class Image:
         if(self.matrix[color] is None):
             self.getMatrix(color)
 
+        # Make a new copy of the Image to work with
         ret = self.copy()
 
+        # If we want to quantize RGB, quantize R, G, and B separately and remash them into RGB
+        # TODO Parallelize this?
         if color == self.COLOR_RGB:
             ret.matrix[self.COLOR_RED] = self._quantize(ret, delta, technique, color=self.COLOR_RED)
             ret.matrix[self.COLOR_GREEN] = self._quantize(ret, delta, technique, color=self.COLOR_GREEN)
@@ -163,6 +166,7 @@ class Image:
                     ret.getMatrix(self.COLOR_GREEN),
                     ret.getMatrix(self.COLOR_BLUE),
                 ), axis=2)
+        # Else we only want a single channel, so just do it & return it
         else:
             ret.matrix[color] = self._quantize(ret, delta, technique, color=color)
 
@@ -186,12 +190,17 @@ class Image:
         # if levels[-1] != max_peak: levels[-1] = max_peak
         # print(len(levels), levels, max_peak)
 
+        # Get the list of starting indices of each bucket (should be delta buckets in total)
         buckets = list(range(0, 256, int(255/delta)))
         if buckets[-1] != 255: buckets[-1] = 255
+        
+        # Go through each bucket and reassign the pixels in them to a new value
+        # depending on the technique
         for i, _ in enumerate(buckets):
             if i == 0: continue
 
-            bucket = list(range(buckets[i-1], buckets[i]))
+            bucket = list(range(buckets[i-1], buckets[i])) # List of all pixel values in current bucket
+
             B.matrix[color][np.where(np.isin(self.matrix[color][:], bucket))] = delta*i
         return B.matrix[color]
 
@@ -220,6 +229,7 @@ class Image:
                 images += loadImages(os.path.join(path, f))
         else:
             rgb_matrix = cv2.imread(path)
+            rgb_matrix = cv2.cvtColor(rgb_matrix, cv2.COLOR_BGR2RGB)
             if rgb_matrix is not None:
                 images.append(Image(rgb_matrix))
             else:
