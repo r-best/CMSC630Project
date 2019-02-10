@@ -23,8 +23,8 @@ def display(img):
 
 
 
-x = Image.fromDir("./test/1.png")[0]
-y = x.quantize(delta=4)
+x = Image.fromDir("./test/2.png")[0]
+y = x.quantize(delta=64)#, color=Image.COLOR_RED)
 
 # print(x.getMatrix(color=Image.COLOR_GRAYSCALE))
 # print(y.matrix[Image.COLOR_GRAYSCALE])

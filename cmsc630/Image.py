@@ -16,8 +16,6 @@ class Image:
 
     # QUANTIZATION TYPES
     QUANT_UNIFORM = "uniform"
-    QUANT_MEDIAN = "median"
-    QUANT_MEAN = "mean"
     
     # CLASS FILTER CONSTANTS
     FILTER_LINEAR = "linear"
@@ -177,22 +175,16 @@ class Image:
 
         Arguments:
             B (Image): The new copy Image produced in `Image.quantize()`
-            delta (int): The quantization level, i.e. max number of color values
-                that will be present in the resulting image
+            delta (int): The step size of the quantizer, i.e. the number of pixel values in each 'bucket'
             technique: Desired quantization technique, see class quantization constants
             color (int): Desired color channel(s), see class color constants
         
         Returns:
             ndarray: The color channel of B that has been quantized
         """
-        # max_peak = np.max(ret.getHistogram(color))
-        # levels = list(range(0, max_peak+1, int(max_peak/delta)))
-        # if levels[-1] != max_peak: levels[-1] = max_peak
-        # print(len(levels), levels, max_peak)
-
-        # Get the list of starting indices of each bucket (should be delta buckets in total)
-        buckets = list(range(0, 256, int(255/delta)))
-        if buckets[-1] != 255: buckets[-1] = 255
+        # Get the list of starting indices of each bucket
+        buckets = list(range(0, 256, delta))
+        if buckets[-1] != 255: buckets.append(255)
         
         # Go through each bucket and reassign the pixels in them to a new value
         # depending on the technique
@@ -200,8 +192,10 @@ class Image:
             if i == 0: continue
 
             bucket = list(range(buckets[i-1], buckets[i])) # List of all pixel values in current bucket
+            
+            if technique == self.QUANT_UNIFORM:
+                B.matrix[color][np.where(np.isin(self.matrix[color][:], bucket))] = delta*i + delta/2
 
-            B.matrix[color][np.where(np.isin(self.matrix[color][:], bucket))] = delta*i
         return B.matrix[color]
 
     
