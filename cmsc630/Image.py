@@ -2,6 +2,7 @@ import os
 import cv2
 import copy
 import numpy as np
+from time import time
 import pathos.pools as pp
 
 class Image:
@@ -139,6 +140,8 @@ class Image:
         Returns:
             Image: A new copy of the original image, equalized according to parameters
         """
+        print("Equalizing image...", flush=True); t = time()
+
         B = self.copy()
 
         # If we want to equalize RGB, equalize R, G, and B separately and remash them into RGB
@@ -156,6 +159,7 @@ class Image:
         else:
             B.matrix[color] = self._equalize(B, color)
 
+        print(f"Done equalizing in {time()-t}s")
         return B
     def _equalize(self, B, color):
         """Helper function for `Image.equalize()`, performs the math to equalize a
@@ -191,6 +195,8 @@ class Image:
         Returns:
             Image: A new copy of the original image, quantized according to parameters
         """
+        print("Quantizing image...", flush=True); t = time()
+
         if(self.matrix[color] is None):
             self.getMatrix(color)
 
@@ -212,6 +218,7 @@ class Image:
         else:
             ret.matrix[color] = self._quantize(ret, delta, technique, color=color)
 
+        print(f"Done quantizing in {time()-t}s")
         return ret
     def _quantize(self, B, delta, technique, color):
         """Helper function for `Image.quantize()`, performs the math to quantize a
@@ -286,6 +293,8 @@ class Image:
         Returns:
             A new copy of this Image object with the filter applied to the desired color channel(s)
         """
+        print("Filtering image...", flush=True); t = time()
+
         if filter is None:
             return "Please specify a filter to use"
 
@@ -311,6 +320,7 @@ class Image:
         else:
             B.matrix[color] = self._applyFilter(B, filter, color=color)
 
+        print(f"Done filtering in {time()-t}s")
         return B
     def _applyFilter(self, B, filter, color):
         """Helper function for `Image.applyFilter()`, performs the math to apply the filter to a
@@ -332,14 +342,12 @@ class Image:
         mat = self.getMatrix(color)
 
         def process_row(i):
-            print(f"Applying filter to row {i}")
             row = B.matrix[color][i]
             for j in range(width_left, mat.shape[1]-width_right):
                 row[j] = np.sum(np.multiply(
                     self.matrix[color][i-width_left:i+width_right+1, j-height_top:j+height_bottom+1],
                     filter
                 ))
-            print(f"Finished row {i}")
             return row
 
         p = pp.ProcessPool()
