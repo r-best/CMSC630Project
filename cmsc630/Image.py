@@ -397,7 +397,7 @@ class Image:
         # extend them out into the space the border should occupy
         elif border == self.FILTER_BORDER_EXTEND:
             filtered[:,:width_left] = np.tile(filtered[:,width_left], (width_left, 1)).T
-            filtered[:,-width_right:] = np.tile(filtered[:,-width_right], (width_right, 1)).T
+            filtered[:,-width_right:] = np.tile(filtered[:,-width_right-1], (width_right, 1)).T
             Bmat = np.vstack((
                 np.tile(filtered[0], (height_top, 1)),
                 filtered,
