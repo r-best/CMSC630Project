@@ -21,15 +21,16 @@ class Image:
     QUANT_MEAN = "mean"
     QUANT_MEDIAN = "median"
     
-    # CLASS FILTER CONSTANTS
-    FILTER_LINEAR = "linear"
-    FILTER_MEDIAN = "median"
+    # FILTER STRATEGIES
+    FILTER_STRAT_LINEAR = "linear"
+    FILTER_STRAT_MEAN = "mean"
+    FILTER_STRAT_MEDIAN = "median"
 
-    # BORDER TYPES TO USE WITH FILTERS
-    BORDER_IGNORE = 'ignore'
-    BORDER_CROP = 'crop'
-    BORDER_PAD = 'pad'
-    BORDER_EXTEND = 'extend'
+    # FILTER BORDER TYPES
+    FILTER_BORDER_IGNORE = 'ignore'
+    FILTER_BORDER_CROP = 'crop'
+    FILTER_BORDER_PAD = 'pad'
+    FILTER_BORDER_EXTEND = 'extend'
 
     def __init__(self, matrix):
         self.matrix = [
@@ -360,9 +361,11 @@ class Image:
                     filter
                 )
 
-                if strategy == self.FILTER_LINEAR:
+                if strategy == self.FILTER_STRAT_LINEAR:
                     row[j] = np.sum(weighted)
-                elif strategy == self.FILTER_MEDIAN:
+                elif strategy == self.FILTER_STRAT_MEAN:
+                    row[j] = np.mean(weighted)
+                elif strategy == self.FILTER_STRAT_MEDIAN:
                     row[j] = np.median(weighted)
             return row
 
@@ -372,17 +375,17 @@ class Image:
         )
 
         # If border type is 'ignore', just return the original borders of the image
-        if border == self.BORDER_IGNORE:
+        if border == self.FILTER_BORDER_IGNORE:
             Bmat = np.vstack((
                 Bmat[0:height_top],
                 filtered,
                 Bmat[mat.shape[0]-height_bottom:]
             ))
         # If border type is 'crop', remove the borders and return a smaller image
-        elif border == self.BORDER_CROP:
+        elif border == self.FILTER_BORDER_CROP:
             Bmat = filtered[:,width_right:-width_right]
         # If border type is 'pad', just replace the border with zeros
-        elif border == self.BORDER_PAD:
+        elif border == self.FILTER_BORDER_PAD:
             filtered[:, :width_left] = 0
             filtered[:, -width_right:] = 0
             Bmat = np.vstack((
@@ -392,7 +395,7 @@ class Image:
             ))
         # If border type is 'extend', take the outermost pixels in the filtered area and
         # extend them out into the space the border should occupy
-        elif border == self.BORDER_EXTEND:
+        elif border == self.FILTER_BORDER_EXTEND:
             filtered[:,:width_left] = np.tile(filtered[:,width_left], (width_left, 1)).T
             filtered[:,-width_right:] = np.tile(filtered[:,-width_right], (width_right, 1)).T
             Bmat = np.vstack((
