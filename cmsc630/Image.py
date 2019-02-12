@@ -265,7 +265,7 @@ class Image:
         return B.matrix[color]
 
     
-    def applyFilter(self, filter=None, color=3):
+    def applyFilter(self, filter=None, color=3, strategy='linear'):
         """Takes in a filter and applies it to each pixel of the Image, producing a new Image
         as output. The filter must be a square 2D array-like of odd degree (i.e. has a clear
         center pixel). However, non-square filters can be acheived by simply setting the entries
@@ -289,6 +289,8 @@ class Image:
         Arguments:
             filter: A 2D square array-like of weights to pass over the image pixel by pixel
             color (int): Desired color channel(s), see class color constants
+            strategy: The strategy to use when applying the filter, either 'linear' or 'median',
+                see class filter constants
         
         Returns:
             A new copy of this Image object with the filter applied to the desired color channel(s)
@@ -322,7 +324,7 @@ class Image:
 
         print(f"Done filtering in {time()-t}s")
         return B
-    def _applyFilter(self, B, filter, color):
+    def _applyFilter(self, B, filter, color, strategy):
         """Helper function for `Image.applyFilter()`, performs the math to apply the filter to a
         single color channel
 
@@ -330,6 +332,8 @@ class Image:
             B (Image): The new copy Image produced in `Image.quantize()`
             filter (ndarray): A 2D square ndarray of weights to pass over the image pixel by pixel
             color (int): Desired color channel(s), see class color constants
+            strategy: The strategy to use when applying the filter, either 'linear' or 'median',
+                see class filter constants
         
         Returns:
             ndarray: The color channel of B that has been altered
@@ -344,10 +348,15 @@ class Image:
         def process_row(i):
             row = B.matrix[color][i]
             for j in range(width_left, mat.shape[1]-width_right):
-                row[j] = np.sum(np.multiply(
+                weighted = np.multiply(
                     self.matrix[color][i-width_left:i+width_right+1, j-height_top:j+height_bottom+1],
                     filter
-                ))
+                )
+
+                if strategy == self.FILTER_LINEAR:
+                    row[j] = np.sum(weighted)
+                elif strategy == self.FILTER_MEDIAN:
+                    row[j] = np.median(weighted)
             return row
 
         p = pp.ProcessPool()
