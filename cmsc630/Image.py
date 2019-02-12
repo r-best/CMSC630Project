@@ -125,11 +125,25 @@ class Image:
 
         return self.matrix[self.COLOR_GRAYSCALE]
     
-    def makeSaltnPepperNoise(self):
+    def makeSaltnPepperNoise(self, rate=0.30, color=3):
         """
         """
-        # Add salt & pepper noise to R, G, and B
-        return
+        print("Adding noise to image...", flush=True); t = time()
+
+        B = self.copy()
+
+        for i in range(B.matrix[color].shape[0]):
+            for j in range(B.matrix[color].shape[1]):
+                if np.random.uniform(0, 1) <= rate:
+                    new_value = np.random.choice([0, 255])
+                    B.matrix[color][i][j] = new_value
+                    if color == self.COLOR_RGB:
+                        B.matrix[self.COLOR_RED][i][j] = new_value
+                        B.matrix[self.COLOR_GREEN][i][j] = new_value
+                        B.matrix[self.COLOR_BLUE][i][j] = new_value
+
+        print(f"Done making noisy in {time()-t}s")
+        return B
     
     def makeGaussianNoise(self):
         """
@@ -152,7 +166,6 @@ class Image:
         B = self.copy()
 
         # If we want to equalize RGB, equalize R, G, and B separately and remash them into RGB
-        # TODO Parallelize this?
         if color == self.COLOR_RGB:
             B.matrix[self.COLOR_RED] = self._equalize(B, color=self.COLOR_RED)
             B.matrix[self.COLOR_GREEN] = self._equalize(B, color=self.COLOR_GREEN)
