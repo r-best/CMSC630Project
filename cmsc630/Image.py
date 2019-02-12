@@ -66,7 +66,7 @@ class Image:
                     self.getHistogram(self.COLOR_BLUE),
                 ), axis=2)
             else: # The single-channel histograms (R, G, B, Gray) can be calculated as follows
-                self.histogram[color] = np.zeros((255,1), dtype="int")
+                self.histogram[color] = np.zeros((256,), dtype="int")
                 for row in self.getMatrix(color):
                     for pixel in row:
                         self.histogram[color][pixel] += 1
@@ -239,7 +239,7 @@ class Image:
         Returns:
             ndarray: The color channel of B that has been quantized
         """
-        print(f"Quantizing with '{technique}' technique to {int(256/delta)} color levels")
+        print(f"Quantizing with '{technique}' technique to {int(256/delta)+1} color levels")
         # Get the list of starting indices of each bucket
         buckets = list(range(0, 256, delta))
         if buckets[-1] != 255: buckets.append(255)
@@ -256,14 +256,14 @@ class Image:
             elif technique == self.QUANT_MEAN:
                 values = np.array([], dtype="int")
                 for index in bucket:
-                    value = self.getHistogram(color)[index][0]
+                    value = self.getHistogram(color)[index]
                     values = np.concatenate((values, np.full((value), value, dtype='int')))
                 mean = np.floor(np.mean(values))
                 B.matrix[color][np.where(np.isin(self.matrix[color][:], bucket))] = mean
             elif technique == self.QUANT_MEDIAN:
                 values = np.array([], dtype="int")
                 for index in bucket:
-                    value = self.getHistogram(color)[index][0]
+                    value = self.getHistogram(color)[index]
                     values = np.concatenate((values, np.full((value), value, dtype='int')))
                 median = np.floor(np.median(bucket))
                 B.matrix[color][np.where(np.isin(self.matrix[color][:], bucket))] = median
