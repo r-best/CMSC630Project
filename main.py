@@ -29,24 +29,15 @@ x = Image.fromDir("./test/1.png")[0]
 # y = x.applyFilter([[ 0, 0, 0 ],
 #                    [ 0, 1, 1 ],
 #                    [ 0, 0, 0 ]])
+# y = x.applyFilter([[ 0, 0, 0 ],
+#                    [ 0, -1, 0 ],
+#                    [ 0, 0, 0 ]])
 
-filter = np.zeros((401, 401))
-filter[400, 400] = 1
-y = x.applyFilter(filter)
+filter = np.zeros((101, 101))
+filter[50, 50] = -1
+y = x.applyFilter(filter, border=Image.BORDER_PAD)
 
 display(y)
 
-# x = np.array([5, 2, 6, 3])
 
-# print(x[np.where(x == 6)])
-# x[x == 6] = 5
-# print(x)
-
-# a = [np.array([
-#     [11, 12, 20, 14, 15],
-#     [16, 17, 18, 19, 20]
-# ])]
-# i = np.where(np.isin(a[0][:], [11, 20]))
-# print(i)
-# a[0][i] = 5
-# print(a[0])
+# print(np.zeros((1, 3), dtype='int'))

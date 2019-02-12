@@ -25,6 +25,12 @@ class Image:
     FILTER_LINEAR = "linear"
     FILTER_MEDIAN = "median"
 
+    # BORDER TYPES TO USE WITH FILTERS
+    BORDER_IGNORE = 'ignore'
+    BORDER_CROP = 'crop'
+    BORDER_PAD = 'pad'
+    BORDER_EXTEND = 'extend'
+
     def __init__(self, matrix):
         self.matrix = [
             matrix[:,:,self.COLOR_RED],
@@ -265,7 +271,7 @@ class Image:
         return B.matrix[color]
 
     
-    def applyFilter(self, filter=None, color=3, strategy='linear'):
+    def applyFilter(self, filter=None, strategy='linear', border='ignore', color=3):
         """Takes in a filter and applies it to each pixel of the Image, producing a new Image
         as output. The filter must be a square 2D array-like of odd degree (i.e. has a clear
         center pixel). However, non-square filters can be acheived by simply setting the entries
@@ -310,9 +316,9 @@ class Image:
         # If we want to apply filter to RGB, process R, G, and B separately and remash them into RGB
         # TODO Parallelize this?
         if color == self.COLOR_RGB:
-            B.matrix[self.COLOR_RED] = self._applyFilter(B, filter, color=self.COLOR_RED)
-            B.matrix[self.COLOR_GREEN] = self._applyFilter(B, filter, color=self.COLOR_GREEN)
-            B.matrix[self.COLOR_BLUE] = self._applyFilter(B, filter, color=self.COLOR_BLUE)
+            B.matrix[self.COLOR_RED] = self._applyFilter(B, filter, strategy, border, color=self.COLOR_RED)
+            B.matrix[self.COLOR_GREEN] = self._applyFilter(B, filter, strategy, border, color=self.COLOR_GREEN)
+            B.matrix[self.COLOR_BLUE] = self._applyFilter(B, filter, strategy, border, color=self.COLOR_BLUE)
             B.matrix[self.COLOR_RGB] = np.stack((
                     B.getMatrix(self.COLOR_RED),
                     B.getMatrix(self.COLOR_GREEN),
@@ -320,11 +326,11 @@ class Image:
                 ), axis=2)
         # Else we only want a single channel, so just do it & return it
         else:
-            B.matrix[color] = self._applyFilter(B, filter, color=color)
+            B.matrix[color] = self._applyFilter(B, filter, strategy, border, color=color)
 
         print(f"Done filtering in {time()-t}s")
         return B
-    def _applyFilter(self, B, filter, color, strategy):
+    def _applyFilter(self, B, filter, strategy, border, color):
         """Helper function for `Image.applyFilter()`, performs the math to apply the filter to a
         single color channel
 
@@ -344,12 +350,13 @@ class Image:
         height_bottom = filter.shape[0] - height_top - 1
 
         mat = self.getMatrix(color)
+        Bmat = B.getMatrix(color)
 
         def process_row(i):
-            row = B.matrix[color][i]
+            row = Bmat[i]
             for j in range(width_left, mat.shape[1]-width_right):
                 weighted = np.multiply(
-                    self.matrix[color][i-width_left:i+width_right+1, j-height_top:j+height_bottom+1],
+                    mat[i-height_top:i+height_bottom+1, j-width_left:j+width_right+1],
                     filter
                 )
 
@@ -360,19 +367,48 @@ class Image:
             return row
 
         p = pp.ProcessPool()
-        B.matrix[color] = np.vstack((
-            B.matrix[color][0:height_top],
-            p.map(process_row, range(height_top, mat.shape[0]-height_bottom)),
-            B.matrix[color][mat.shape[0]-height_bottom:]
-        ))
+        filtered = np.array(
+            p.map(process_row, range(height_top, mat.shape[0]-height_bottom))
+        )
 
-        if np.min(B.matrix[color]) < 0:
-            np.add(B.matrix[color], -1*np.min(B.matrix[color]))
-        if np.max(B.matrix[color]) > 255:
-            scale = 255/np.max(B.matrix[color])
-            np.multiply(B.matrix[color], scale)
+        # If border type is 'ignore', just return the original borders of the image
+        if border == self.BORDER_IGNORE:
+            Bmat = np.vstack((
+                Bmat[0:height_top],
+                filtered,
+                Bmat[mat.shape[0]-height_bottom:]
+            ))
+        # If border type is 'crop', remove the borders and return a smaller image
+        elif border == self.BORDER_CROP:
+            Bmat = filtered[:,width_right:-width_right]
+        # If border type is 'pad', just replace the border with zeros
+        elif border == self.BORDER_PAD:
+            filtered[:, :width_left] = 0
+            filtered[:, -width_right:] = 0
+            Bmat = np.vstack((
+                np.zeros((height_top, filtered.shape[1]), dtype='int'),
+                filtered,
+                np.zeros((height_bottom, filtered.shape[1]), dtype='int')
+            ))
+        # If border type is 'extend', take the outermost pixels in the filtered area and
+        # extend them out into the space the border should occupy
+        elif border == self.BORDER_EXTEND:
+            filtered[:,:width_left] = np.tile(filtered[:,width_left], (width_left, 1)).T
+            filtered[:,-width_right:] = np.tile(filtered[:,-width_right], (width_right, 1)).T
+            Bmat = np.vstack((
+                np.tile(filtered[0], (height_top, 1)),
+                filtered,
+                np.tile(filtered[-1], (height_bottom, 1))
+            ))
 
-        return B.matrix[color]
+        # Normalize pixel values, make sure they're all within the 0-255 range
+        if np.min(Bmat) < 0:
+            np.add(Bmat, -1*np.min(Bmat))
+        if np.max(Bmat) > 255:
+            scale = 255/np.max(Bmat)
+            np.multiply(Bmat, scale)
+
+        return Bmat
 
     @staticmethod
     def fromDir(path):
