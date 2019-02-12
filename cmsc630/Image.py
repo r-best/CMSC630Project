@@ -427,11 +427,11 @@ class Image:
         images = list()
         if os.path.isdir(path):
             for f in os.listdir(path):
-                images += loadImages(os.path.join(path, f))
+                images += Image.fromDir(os.path.join(path, f))
         else:
             rgb_matrix = cv2.imread(path)
-            rgb_matrix = cv2.cvtColor(rgb_matrix, cv2.COLOR_BGR2RGB)
             if rgb_matrix is not None:
+                rgb_matrix = cv2.cvtColor(rgb_matrix, cv2.COLOR_BGR2RGB)
                 images.append(Image(rgb_matrix))
             else:
                 print(f"Error reading file {path}, skipping")
