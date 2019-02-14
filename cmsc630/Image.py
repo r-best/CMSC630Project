@@ -126,9 +126,19 @@ class Image:
         return self.matrix[self.COLOR_GRAYSCALE]
     
     def makeSaltnPepperNoise(self, rate=0.30, color=3):
+        """Adds noise to the image by giving each pixel a {rate}% chance
+        to have its value changed to either 0 or 255, resulting in black
+        and white spots all over the image
+
+        Arguments:
+            rate (float): A number in the range [0-1] representing each pixel's
+                chance of being corrupted
+            color (int): Desired color channel(s), see class color constants
+        
+        Returns:
+            Image: A new copy of the original image, corrupted with salt & pepper noise
         """
-        """
-        print("Adding noise to image...", flush=True); t = time()
+        print("Adding salt&pepper noise to image...", flush=True); t = time()
 
         B = self.copy()
 
@@ -145,11 +155,63 @@ class Image:
         print(f"Done making noisy in {time()-t}s")
         return B
     
-    def makeGaussianNoise(self):
+    def makeGaussianNoise(self, rate=0.30, mean=None, stddev=None, color=3):
+        """Adds noise to the image by giving each pixel a {rate}% chance
+        to have its value changed to a random value generated from a normal
+        distribution with the given mean and standard deviation. If mean and
+        standard deviation are not provided they will be calculated from the image
+
+        Arguments:
+            rate (float): A number in the range [0-1] representing each pixel's
+                chance of being corrupted
+            mean (float): The mean of the gaussian distribution
+            stddev (float): The standard deviation of the gaussian distribution
+            color (int): Desired color channel(s), see class color constants
+        
+        Returns:
+            Image: A new copy of the original image, corrupted with salt & pepper noise
         """
+        print("Adding gaussian noise to image...", flush=True); t = time()
+
+        B = self.copy()
+
+        if mean is None: mean = np.mean(B.getMatrix(color))
+        if stddev is None: stddev = np.std(B.getMatrix(color))
+
+        for i in range(B.matrix[color].shape[0]):
+            for j in range(B.matrix[color].shape[1]):
+                if np.random.uniform(0, 1) <= rate:
+                    new_value = np.random.normal(loc=mean, scale=stddev)
+                    B.matrix[color][i][j] = new_value
+                    if color == self.COLOR_RGB:
+                        B.matrix[self.COLOR_RED][i][j] = new_value
+                        B.matrix[self.COLOR_GREEN][i][j] = new_value
+                        B.matrix[self.COLOR_BLUE][i][j] = new_value
+        
+        B._normalize(color)
+
+        print(f"Done making noisy in {time()-t}s")
+        return B
+    
+    def _normalize(self, color=3):
+        """Checks to make sure the values of the color channel are in the range [0-255]
+        and adjusts them if they're not. Called by the other functions of this class
+        when they edit matrices in a way that could produce values outside of the range.
+
+        Arguments:
+            color (int): Desired color channel(s), see class color constants
         """
-        # Add gaussian noise to R, G, and B
-        return
+        if color == self.COLOR_RGB:
+            color = self.COLOR_RED
+            self._normalize(color=self.COLOR_GREEN)
+            self._normalize(color=self.COLOR_BLUE)
+
+        # Normalize pixel values, make sure they're all within the 0-255 range
+        if np.min(self.matrix[color]) < 0:
+            np.add(self.matrix[color], -1*np.min(self.matrix[color]))
+        if np.max(self.matrix[color]) > 255:
+            scale = 255/np.max(self.matrix[color])
+            np.multiply(self.matrix[color], scale)
     
     def equalize(self, color=3):
         """Returns a new copy of this Image object that has been equalized
@@ -349,7 +411,7 @@ class Image:
         single color channel
 
         Arguments:
-            B (Image): The new copy Image produced in `Image.quantize()`
+            B (Image): The new copy Image produced in `Image.applyFilter()`
             filter (ndarray): A 2D square ndarray of weights to pass over the image pixel by pixel
             color (int): Desired color channel(s), see class color constants
             strategy: The strategy to use when applying the filter, either 'linear' or 'median',
@@ -417,12 +479,7 @@ class Image:
                 np.tile(filtered[-1], (height_bottom, 1))
             ))
 
-        # Normalize pixel values, make sure they're all within the 0-255 range
-        if np.min(Bmat) < 0:
-            np.add(Bmat, -1*np.min(Bmat))
-        if np.max(Bmat) > 255:
-            scale = 255/np.max(Bmat)
-            np.multiply(Bmat, scale)
+        B._normalize(color)
 
         return Bmat
 

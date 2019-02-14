@@ -29,7 +29,7 @@ x = Image.fromDir("./test/1.png")[0]
 #                    [ 0, 1, 1 ],
 #                    [ 0, 0, 0 ]])
 # y = x.applyFilter(np.ones((35, 35)), strategy=Image.FILTER_STRAT_MEAN, border=Image.FILTER_BORDER_EXTEND)
-y = x.makeSaltnPepperNoise(rate=0.75)
+y = x.makeGaussianNoise(rate=0.25)
 
 # filter = np.zeros((101, 101))
 # filter[50, 50] = -1
