@@ -255,7 +255,7 @@ class Image:
         Returns:
             ndarray: The color channel of B that has been equalized
         """
-        cdf = np.zeros(255, dtype="int")
+        cdf = np.zeros(256, dtype="int")
         num_pixels = np.sum(self.getHistogram(color))
         total = 0
         for i, level in enumerate(self.getHistogram(color)):
@@ -315,11 +315,12 @@ class Image:
         Returns:
             ndarray: The color channel of B that has been quantized
         """
-        print(f"Quantizing with '{technique}' technique to {int(256/delta)+1} color levels")
         # Get the list of starting indices of each bucket
         buckets = list(range(0, 256, delta))
-        if buckets[-1] != 255: buckets.append(255)
-        
+        if buckets[-1] != 255: buckets[-1] = 255
+
+        print(f"Quantizing with '{technique}' technique to {len(buckets)-1} color levels")
+
         # Go through each bucket and reassign the pixels in them to a new value
         # depending on the technique
         for i, _ in enumerate(buckets):
