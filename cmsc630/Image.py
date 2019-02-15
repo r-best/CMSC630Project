@@ -53,9 +53,9 @@ class Image:
         are altered, deletes the precomputed values that are dependent
         on them so they can be recalculated next time they are requested.
         """
-        B.matrix[self.COLOR_RGB] = None
-        B.matrix[self.COLOR_GRAYSCALE] = None
-        B.histogram = [None, None, None, None, None]
+        self.matrix[self.COLOR_RGB] = None
+        self.matrix[self.COLOR_GRAYSCALE] = None
+        self.histogram = [None, None, None, None, None]
 
     def getHistogram(self, color=3):
         """Returns a histogram of the Image's pixel values.
@@ -226,27 +226,27 @@ class Image:
             self.getMatrix(color)
 
         # Make a new copy of the Image to work with
-        ret = self.copy()
+        B = self.copy()
 
         # If we want to quantize RGB, quantize R, G, and B separately and remash them into RGB
         # TODO Parallelize this?
         if color == self.COLOR_RGB:
-            ret.matrix[self.COLOR_RED] = self._quantize(ret, delta, technique, color=self.COLOR_RED)
-            ret.matrix[self.COLOR_GREEN] = self._quantize(ret, delta, technique, color=self.COLOR_GREEN)
-            ret.matrix[self.COLOR_BLUE] = self._quantize(ret, delta, technique, color=self.COLOR_BLUE)
-            ret.matrix[self.COLOR_RGB] = np.stack((
-                    ret.getMatrix(self.COLOR_RED),
-                    ret.getMatrix(self.COLOR_GREEN),
-                    ret.getMatrix(self.COLOR_BLUE),
+            B.matrix[self.COLOR_RED] = self._quantize(B, delta, technique, color=self.COLOR_RED)
+            B.matrix[self.COLOR_GREEN] = self._quantize(B, delta, technique, color=self.COLOR_GREEN)
+            B.matrix[self.COLOR_BLUE] = self._quantize(B, delta, technique, color=self.COLOR_BLUE)
+            B.matrix[self.COLOR_RGB] = np.stack((
+                    B.getMatrix(self.COLOR_RED),
+                    B.getMatrix(self.COLOR_GREEN),
+                    B.getMatrix(self.COLOR_BLUE),
                 ), axis=2)
         # Else we only want a single channel, so just do it & return it
         else:
-            ret.matrix[color] = self._quantize(ret, delta, technique, color=color)
+            B.matrix[color] = self._quantize(B, delta, technique, color=color)
         
         B.invalidateLazies()
 
         print(f"Done quantizing in {time()-t}s")
-        return ret
+        return B
     def _quantize(self, B, delta, technique, color):
         """Helper function for `Image.quantize()`, performs the math to quantize a
         single color channel
