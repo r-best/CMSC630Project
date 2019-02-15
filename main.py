@@ -22,20 +22,20 @@ def display(img):
     plt.show()
 
 
-x = Image.fromDir("./test/1.png")[0]
+x = Image.fromDir("./test/2.png")[0]
 # y = x.equalize()
-# y = x.quantize(delta=128, technique=Image.QUANT_MEDIAN)
-# y = x.applyFilter([[ 0, 0, 0 ],
+x = x.quantize(delta=31, technique=Image.QUANT_MEDIAN)
+# y = x.filter([[ 0, 0, 0 ],
 #                    [ 0, 1, 1 ],
 #                    [ 0, 0, 0 ]])
-# y = x.applyFilter(np.ones((35, 35)), strategy=Image.FILTER_STRAT_MEAN, border=Image.FILTER_BORDER_EXTEND)
-y = x.makeGaussianNoise(rate=0.25)
+# y = x.filter(np.ones((35, 35)), strategy=Image.FILTER_STRAT_MEAN, border=Image.FILTER_BORDER_EXTEND)
+# x = x.quantize()
 
 # filter = np.zeros((101, 101))
 # filter[50, 50] = -1
-# y = x.applyFilter(filter, border=Image.FILTER_BORDER_PAD)
+# y = x.filter(filter, border=Image.FILTER_BORDER_PAD)
 
-display(y)
+display(x)
 
 
 # print(np.zeros((1, 3), dtype='int'))

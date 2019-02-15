@@ -134,78 +134,6 @@ class Image:
 
         return self.matrix[self.COLOR_GRAYSCALE]
     
-    def makeSaltnPepperNoise(self, rate=0.30, color=3):
-        """Adds noise to the image by giving each pixel a {rate}% chance
-        to have its value changed to either 0 or 255, resulting in black
-        and white spots all over the image
-
-        Arguments:
-            rate (float): A number in the range [0-1] representing each pixel's
-                chance of being corrupted
-            color (int): Desired color channel(s), see class color constants
-        
-        Returns:
-            Image: A new copy of the original image, corrupted with salt & pepper noise
-        """
-        print("Adding salt&pepper noise to image...", flush=True); t = time()
-
-        B = self.copy()
-
-        for i in range(B.matrix[color].shape[0]):
-            for j in range(B.matrix[color].shape[1]):
-                if np.random.uniform(0, 1) <= rate:
-                    new_value = np.random.choice([0, 255])
-                    B.matrix[color][i][j] = new_value
-                    if color == self.COLOR_RGB:
-                        B.matrix[self.COLOR_RED][i][j] = new_value
-                        B.matrix[self.COLOR_GREEN][i][j] = new_value
-                        B.matrix[self.COLOR_BLUE][i][j] = new_value
-        
-        B.invalidateLazies()
-
-        print(f"Done making noisy in {time()-t}s")
-        return B
-    
-    def makeGaussianNoise(self, rate=0.30, mean=None, stddev=None, color=3):
-        """Adds noise to the image by giving each pixel a {rate}% chance
-        to have its value changed to a random value generated from a normal
-        distribution with the given mean and standard deviation. If mean and
-        standard deviation are not provided they will be calculated from the image
-
-        Arguments:
-            rate (float): A number in the range [0-1] representing each pixel's
-                chance of being corrupted
-            mean (float): The mean of the gaussian distribution
-            stddev (float): The standard deviation of the gaussian distribution
-            color (int): Desired color channel(s), see class color constants
-        
-        Returns:
-            Image: A new copy of the original image, corrupted with salt & pepper noise
-        """
-        print("Adding gaussian noise to image...", flush=True); t = time()
-
-        B = self.copy()
-
-        if mean is None: mean = np.mean(B.getMatrix(color))
-        if stddev is None: stddev = np.std(B.getMatrix(color))
-
-        for i in range(B.matrix[color].shape[0]):
-            for j in range(B.matrix[color].shape[1]):
-                if np.random.uniform(0, 1) <= rate:
-                    new_value = np.random.normal(loc=mean, scale=stddev)
-                    B.matrix[color][i][j] = new_value
-                    if color == self.COLOR_RGB:
-                        B.matrix[self.COLOR_RED][i][j] = new_value
-                        B.matrix[self.COLOR_GREEN][i][j] = new_value
-                        B.matrix[self.COLOR_BLUE][i][j] = new_value
-        
-        B._normalize(color)
-        
-        B.invalidateLazies()
-
-        print(f"Done making noisy in {time()-t}s")
-        return B
-    
     def _normalize(self, color=3):
         """Checks to make sure the values of the color channel are in the range [0-255]
         and adjusts them if they're not. Called by the other functions of this class
@@ -365,7 +293,7 @@ class Image:
         return B.matrix[color]
 
     
-    def applyFilter(self, filter=None, strategy='linear', border='ignore', color=3):
+    def filter(self, filter=None, strategy='linear', border='ignore', color=3):
         """Takes in a filter and applies it to each pixel of the Image, producing a new Image
         as output. The filter must be a square 2D array-like of odd degree (i.e. has a clear
         center pixel). However, non-square filters can be acheived by simply setting the entries
@@ -426,7 +354,7 @@ class Image:
 
         print(f"Done filtering in {time()-t}s")
         return B
-    def _applyFilter(self, B, filter, strategy, border, color):
+    def _filter(self, B, filter, strategy, border, color):
         """Helper function for `Image.applyFilter()`, performs the math to apply the filter to a
         single color channel
 
@@ -502,6 +430,78 @@ class Image:
         B._normalize(color)
 
         return Bmat
+    
+    def makeSaltnPepperNoise(self, rate=0.30, color=3):
+        """Adds noise to the image by giving each pixel a {rate}% chance
+        to have its value changed to either 0 or 255, resulting in black
+        and white spots all over the image
+
+        Arguments:
+            rate (float): A number in the range [0-1] representing each pixel's
+                chance of being corrupted
+            color (int): Desired color channel(s), see class color constants
+        
+        Returns:
+            Image: A new copy of the original image, corrupted with salt & pepper noise
+        """
+        print("Adding salt&pepper noise to image...", flush=True); t = time()
+
+        B = self.copy()
+
+        for i in range(B.matrix[color].shape[0]):
+            for j in range(B.matrix[color].shape[1]):
+                if np.random.uniform(0, 1) <= rate:
+                    new_value = np.random.choice([0, 255])
+                    B.matrix[color][i][j] = new_value
+                    if color == self.COLOR_RGB:
+                        B.matrix[self.COLOR_RED][i][j] = new_value
+                        B.matrix[self.COLOR_GREEN][i][j] = new_value
+                        B.matrix[self.COLOR_BLUE][i][j] = new_value
+        
+        B.invalidateLazies()
+
+        print(f"Done making noisy in {time()-t}s")
+        return B
+    
+    def makeGaussianNoise(self, rate=0.30, mean=None, stddev=None, color=3):
+        """Adds noise to the image by giving each pixel a {rate}% chance
+        to have its value changed to a random value generated from a normal
+        distribution with the given mean and standard deviation. If mean and
+        standard deviation are not provided they will be calculated from the image
+
+        Arguments:
+            rate (float): A number in the range [0-1] representing each pixel's
+                chance of being corrupted
+            mean (float): The mean of the gaussian distribution
+            stddev (float): The standard deviation of the gaussian distribution
+            color (int): Desired color channel(s), see class color constants
+        
+        Returns:
+            Image: A new copy of the original image, corrupted with salt & pepper noise
+        """
+        print("Adding gaussian noise to image...", flush=True); t = time()
+
+        B = self.copy()
+
+        if mean is None: mean = np.mean(B.getMatrix(color))
+        if stddev is None: stddev = np.std(B.getMatrix(color))
+
+        for i in range(B.matrix[color].shape[0]):
+            for j in range(B.matrix[color].shape[1]):
+                if np.random.uniform(0, 1) <= rate:
+                    new_value = np.random.normal(loc=mean, scale=stddev)
+                    B.matrix[color][i][j] = new_value
+                    if color == self.COLOR_RGB:
+                        B.matrix[self.COLOR_RED][i][j] = new_value
+                        B.matrix[self.COLOR_GREEN][i][j] = new_value
+                        B.matrix[self.COLOR_BLUE][i][j] = new_value
+        
+        B._normalize(color)
+        
+        B.invalidateLazies()
+
+        print(f"Done making noisy in {time()-t}s")
+        return B
 
     @staticmethod
     def fromDir(path):
