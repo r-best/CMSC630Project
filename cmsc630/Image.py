@@ -47,6 +47,15 @@ class Image:
         ret.matrix = copy.deepcopy(self.matrix)
         ret.histogram = copy.deepcopy(self.histogram)
         return ret
+    
+    def invalidateLazies(self):
+        """Should be called whenever the Image's R, G, or B matrices
+        are altered, deletes the precomputed values that are dependent
+        on them so they can be recalculated next time they are requested.
+        """
+        B.matrix[self.COLOR_RGB] = None
+        B.matrix[self.COLOR_GRAYSCALE] = None
+        B.histogram = [None, None, None, None, None]
 
     def getHistogram(self, color=3):
         """Returns a histogram of the Image's pixel values.
@@ -151,6 +160,8 @@ class Image:
                         B.matrix[self.COLOR_RED][i][j] = new_value
                         B.matrix[self.COLOR_GREEN][i][j] = new_value
                         B.matrix[self.COLOR_BLUE][i][j] = new_value
+        
+        B.invalidateLazies()
 
         print(f"Done making noisy in {time()-t}s")
         return B
@@ -189,6 +200,8 @@ class Image:
                         B.matrix[self.COLOR_BLUE][i][j] = new_value
         
         B._normalize(color)
+        
+        B.invalidateLazies()
 
         print(f"Done making noisy in {time()-t}s")
         return B
@@ -240,6 +253,8 @@ class Image:
         # Else we only want a single channel, so just do it & return it
         else:
             B.matrix[color] = self._equalize(B, color)
+        
+        B.invalidateLazies()
 
         print(f"Done equalizing in {time()-t}s")
         return B
@@ -299,6 +314,8 @@ class Image:
         # Else we only want a single channel, so just do it & return it
         else:
             ret.matrix[color] = self._quantize(ret, delta, technique, color=color)
+        
+        B.invalidateLazies()
 
         print(f"Done quantizing in {time()-t}s")
         return ret
@@ -404,6 +421,8 @@ class Image:
         # Else we only want a single channel, so just do it & return it
         else:
             B.matrix[color] = self._applyFilter(B, filter, strategy, border, color=color)
+        
+        B.invalidateLazies()
 
         print(f"Done filtering in {time()-t}s")
         return B
