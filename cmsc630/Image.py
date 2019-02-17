@@ -8,6 +8,17 @@ import pathos.pools as pp
 class Image:
     """Represents an image and provides methods for interacting
     with and manipulating it
+
+    The Image is constructed from a numpy ndarray of shape (height, width, 3), the 3
+    representing the red, green, and blue channels (the same format used in OpenCV).
+    This matrix is split up and stored as the individual colors to more easily
+    perform operations on specific channels.
+    
+    Histograms for each color channel and the RGB and grayscale versions of the image
+    are all calculated lazily upon request and then stored to avoid unnecessary
+    recalculation. If you manually modify the R, G, or B channels outside of the
+    provided class methods you must call the `Image.invalidateLazies()` method to 
+    reset them or you will continue to receive the old stored versions.
     """
     # CLASS COLOR CONSTANTS
     COLOR_RED = 0
@@ -43,6 +54,12 @@ class Image:
         self.histogram = [None, None, None, None, None]
     
     def copy(self):
+        """Returns a deep copy of this Image object, including the
+        precomupted lazy values
+
+        Returns
+            Image: A deep copy of this Image object
+        """
         ret = Image(self.getMatrix())
         ret.matrix = copy.deepcopy(self.matrix)
         ret.histogram = copy.deepcopy(self.histogram)
