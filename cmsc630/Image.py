@@ -510,6 +510,31 @@ class Image:
 
         print(f"Done making noisy in {time()-t}s")
         return B
+    
+    @staticmethod
+    def fromFile(path):
+        """Takes in a path to an image file and creates a new
+        Image object from it. If the path is a directory, calls
+        `Image.fromDir()` instead and returns its results.
+
+        Arguments:
+            path (str): The path to the desired image
+        
+        Returns:
+            An Image if the path is a file, a list of Images if
+            the path is a directory, or None if the path is invalid
+        """
+        if os.path.isdir(path):
+            return Image.fromDir(path)
+        
+        rgb_matrix = cv2.imread(path)
+        if rgb_matrix is not None:
+            rgb_matrix = cv2.cvtColor(rgb_matrix, cv2.COLOR_BGR2RGB)
+            return Image(rgb_matrix)
+        else:
+            print(f"Error reading file {path}")
+            return None
+
 
     @staticmethod
     def fromDir(path):
