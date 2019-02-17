@@ -74,9 +74,9 @@ class Image:
                     self.getHistogram(self.COLOR_RED),
                     self.getHistogram(self.COLOR_GREEN),
                     self.getHistogram(self.COLOR_BLUE),
-                ), axis=2)
+                ), axis=1)
             else: # The single-channel histograms (R, G, B, Gray) can be calculated as follows
-                self.histogram[color] = np.zeros((256,), dtype="int")
+                self.histogram[color] = np.zeros(256, dtype="int")
                 for row in self.getMatrix(color):
                     for pixel in row:
                         self.histogram[color][pixel] += 1
@@ -173,11 +173,6 @@ class Image:
             B.matrix[self.COLOR_RED] = self._equalize(B, color=self.COLOR_RED)
             B.matrix[self.COLOR_GREEN] = self._equalize(B, color=self.COLOR_GREEN)
             B.matrix[self.COLOR_BLUE] = self._equalize(B, color=self.COLOR_BLUE)
-            B.matrix[self.COLOR_RGB] = np.stack((
-                    B.getMatrix(self.COLOR_RED),
-                    B.getMatrix(self.COLOR_GREEN),
-                    B.getMatrix(self.COLOR_BLUE),
-                ), axis=2)
         # Else we only want a single channel, so just do it & return it
         else:
             B.matrix[color] = self._equalize(B, color)
@@ -234,18 +229,19 @@ class Image:
             B.matrix[self.COLOR_RED] = self._quantize(B, delta, technique, color=self.COLOR_RED)
             B.matrix[self.COLOR_GREEN] = self._quantize(B, delta, technique, color=self.COLOR_GREEN)
             B.matrix[self.COLOR_BLUE] = self._quantize(B, delta, technique, color=self.COLOR_BLUE)
-            B.matrix[self.COLOR_RGB] = np.stack((
-                    B.getMatrix(self.COLOR_RED),
-                    B.getMatrix(self.COLOR_GREEN),
-                    B.getMatrix(self.COLOR_BLUE),
-                ), axis=2)
         # Else we only want a single channel, so just do it & return it
         else:
             B.matrix[color] = self._quantize(B, delta, technique, color=color)
         
         B.invalidateLazies()
 
-        print(f"Done quantizing in {time()-t}s")
+        # Calculate mean squared quantization error
+        pdf = self.getHistogram(color) / 256
+        MSQE = 0
+        for i in range(len(self.getHistogram(color))):
+            MSQE += np.square(self.getHistogram(color)[i] - B.getHistogram(color)[i]) * pdf[i]
+
+        print(f"Done quantizing in {time()-t}s, MSQE of {MSQE}")
         return B
     def _quantize(self, B, delta, technique, color):
         """Helper function for `Image.quantize()`, performs the math to quantize a
@@ -341,11 +337,6 @@ class Image:
             B.matrix[self.COLOR_RED] = self._applyFilter(B, filter, strategy, border, color=self.COLOR_RED)
             B.matrix[self.COLOR_GREEN] = self._applyFilter(B, filter, strategy, border, color=self.COLOR_GREEN)
             B.matrix[self.COLOR_BLUE] = self._applyFilter(B, filter, strategy, border, color=self.COLOR_BLUE)
-            B.matrix[self.COLOR_RGB] = np.stack((
-                    B.getMatrix(self.COLOR_RED),
-                    B.getMatrix(self.COLOR_GREEN),
-                    B.getMatrix(self.COLOR_BLUE),
-                ), axis=2)
         # Else we only want a single channel, so just do it & return it
         else:
             B.matrix[color] = self._applyFilter(B, filter, strategy, border, color=color)
