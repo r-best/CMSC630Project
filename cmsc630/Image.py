@@ -351,23 +351,23 @@ class Image:
         # If we want to apply filter to RGB, process R, G, and B separately and remash them into RGB
         # TODO Parallelize this?
         if color == self.COLOR_RGB:
-            B.matrix[self.COLOR_RED] = self._applyFilter(B, filter, strategy, border, color=self.COLOR_RED)
-            B.matrix[self.COLOR_GREEN] = self._applyFilter(B, filter, strategy, border, color=self.COLOR_GREEN)
-            B.matrix[self.COLOR_BLUE] = self._applyFilter(B, filter, strategy, border, color=self.COLOR_BLUE)
+            B.matrix[self.COLOR_RED] = self._filter(B, filter, strategy, border, color=self.COLOR_RED)
+            B.matrix[self.COLOR_GREEN] = self._filter(B, filter, strategy, border, color=self.COLOR_GREEN)
+            B.matrix[self.COLOR_BLUE] = self._filter(B, filter, strategy, border, color=self.COLOR_BLUE)
         # Else we only want a single channel, so just do it & return it
         else:
-            B.matrix[color] = self._applyFilter(B, filter, strategy, border, color=color)
+            B.matrix[color] = self._filter(B, filter, strategy, border, color=color)
         
         B.invalidateLazies()
 
         print(f"Done filtering in {time()-t}s")
         return B
     def _filter(self, B, filter, strategy, border, color):
-        """Helper function for `Image.applyFilter()`, performs the math to apply the filter to a
+        """Helper function for `Image.filter()`, performs the math to apply the filter to a
         single color channel
 
         Arguments:
-            B (Image): The new copy Image produced in `Image.applyFilter()`
+            B (Image): The new copy Image produced in `Image.filter()`
             filter (ndarray): A 2D square ndarray of weights to pass over the image pixel by pixel
             color (int): Desired color channel(s), see class color constants
             strategy: The strategy to use when applying the filter, either 'linear' or 'median',
