@@ -152,7 +152,9 @@ class Image:
                 w = [0.30, 0.59, 0.11]
             else:
                 w = [0.33, 0.33, 0.33]
-            self.matrix[self.COLOR_GRAYSCALE] = np.sum(np.multiply(self.matrix[self.COLOR_RGB], w), axis=2, dtype="int")
+            self.matrix[self.COLOR_GRAYSCALE] = np.sum(
+                np.multiply(self.getMatrix(color=self.COLOR_RGB), w),
+                axis=2, dtype="int")
 
         return self.matrix[self.COLOR_GRAYSCALE]
     
@@ -288,17 +290,15 @@ class Image:
         """
         # Get the list of starting indices of each bucket
         buckets = list(range(0, 256, delta))
-        if buckets[-1] != 255: buckets[-1] = 255
+        if buckets[-1] != 256: buckets[-1] = 256
 
         print(f"Quantizing with '{technique}' technique to {len(buckets)-1} color levels")
 
         # Go through each bucket and reassign the pixels in them to a new value
         # depending on the technique
-        for i, _ in enumerate(buckets):
-            if i == 0: continue
-
+        for i in range(1, len(buckets)):
             bucket = list(range(buckets[i-1], buckets[i])) # List of all pixel values in current bucket
-            
+
             if technique == self.QUANT_UNIFORM:
                 B.matrix[color][np.where(np.isin(self.matrix[color][:], bucket))] = delta*i + delta/2
             elif technique == self.QUANT_MEAN:
