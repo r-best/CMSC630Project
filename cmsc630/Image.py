@@ -17,8 +17,12 @@ class Image:
     Histograms for each color channel and the RGB and grayscale versions of the image
     are all calculated lazily upon request and then stored to avoid unnecessary
     recalculation. If you manually modify the R, G, or B channels outside of the
-    provided class methods you must call the `Image.invalidateLazies()` method to 
+    provided class methods you must call the `Image.invalidateLazies()` method to
     reset them or you will continue to receive the old stored versions.
+
+    Class constructor also takes an optional `timer` argument. If set to True, all
+    non-getter methods (quantization, equalization, etc..) will return their execution
+    time in addition to their usual arguments
     """
     # CLASS COLOR CONSTANTS
     COLOR_RED = 0
@@ -43,7 +47,7 @@ class Image:
     FILTER_BORDER_PAD = 'pad'
     FILTER_BORDER_EXTEND = 'extend'
 
-    def __init__(self, matrix):
+    def __init__(self, matrix, timer=False):
         self.matrix = [
             matrix[:,:,self.COLOR_RED],
             matrix[:,:,self.COLOR_GREEN],
@@ -52,6 +56,7 @@ class Image:
             None
         ]
         self.histogram = [None, None, None, None, None]
+        self.timer = timer
     
     def copy(self):
         """Returns a deep copy of this Image object, including the
@@ -181,7 +186,8 @@ class Image:
         Returns:
             Image: A new copy of the original image, equalized according to parameters
         """
-        print("Equalizing image...", flush=True); t = time()
+        t0 = time()
+        print("Equalizing image...", flush=True)
 
         B = self.copy()
 
@@ -196,8 +202,9 @@ class Image:
         
         B.invalidateLazies()
 
-        print(f"Done equalizing in {time()-t}s")
-        return B
+        t1 = time()-t0
+        print(f"Done equalizing in {t1}s")
+        return B if not self.timer else (B, t1)
     def _equalize(self, B, color):
         """Helper function for `Image.equalize()`, performs the math to equalize a
         single color channel using the algorithm described at
@@ -232,7 +239,8 @@ class Image:
         Returns:
             Image: A new copy of the original image, quantized according to parameters
         """
-        print("Quantizing image...", flush=True); t = time()
+        t0 = time()
+        print("Quantizing image...", flush=True)
 
         if(self.matrix[color] is None):
             self.getMatrix(color)
@@ -252,14 +260,19 @@ class Image:
         
         B.invalidateLazies()
 
+        t1 = time()-t0
+        print(f"Done quantizing in {t1}s...", end="", flush=True)
+
         # Calculate mean squared quantization error
+        t0_msqe = time()
         pdf = self.getHistogram(color) / 256
         MSQE = 0
         for i in range(len(self.getHistogram(color))):
             MSQE += np.square(self.getHistogram(color)[i] - B.getHistogram(color)[i]) * pdf[i]
 
-        print(f"Done quantizing in {time()-t}s, MSQE of {MSQE}")
-        return B
+        t1_msqe = time()-t0_msqe
+        print(f"MSQE of {MSQE} (computed in {t1_msqe}s)")
+        return B if not self.timer else (B, t1, t1_msqe)
     def _quantize(self, B, delta, technique, color):
         """Helper function for `Image.quantize()`, performs the math to quantize a
         single color channel
@@ -302,7 +315,6 @@ class Image:
                     values = np.concatenate((values, np.full((value), value, dtype='int')))
                 median = np.floor(np.median(bucket))
                 B.matrix[color][np.where(np.isin(self.matrix[color][:], bucket))] = median
-
         return B.matrix[color]
 
     
@@ -336,7 +348,8 @@ class Image:
         Returns:
             A new copy of this Image object with the filter applied to the desired color channel(s)
         """
-        print("Filtering image...", flush=True); t = time()
+        t0 = time()
+        print("Filtering image...", flush=True)
 
         if filter is None:
             return "Please specify a filter to use"
@@ -360,8 +373,9 @@ class Image:
         
         B.invalidateLazies()
 
-        print(f"Done filtering in {time()-t}s")
-        return B
+        t1 = time()-t0
+        print(f"Done filtering in {t1}s")
+        return B if not self.timer else (B, t1)
     def _filter(self, B, filter, strategy, border, color):
         """Helper function for `Image.filter()`, performs the math to apply the filter to a
         single color channel
@@ -452,7 +466,8 @@ class Image:
         Returns:
             Image: A new copy of the original image, corrupted with salt & pepper noise
         """
-        print("Adding salt&pepper noise to image...", flush=True); t = time()
+        t0 = time()
+        print("Adding salt&pepper noise to image...", flush=True)
 
         B = self.copy()
 
@@ -468,8 +483,9 @@ class Image:
         
         B.invalidateLazies()
 
-        print(f"Done making noisy in {time()-t}s")
-        return B
+        t1 = time()-t0
+        print(f"Done making noisy in {t1}s")
+        return B if not self.timer else (B, t1)
     
     def makeGaussianNoise(self, rate=0.30, mean=None, stddev=None, color=3):
         """Adds noise to the image by giving each pixel a {rate}% chance
@@ -487,7 +503,8 @@ class Image:
         Returns:
             Image: A new copy of the original image, corrupted with salt & pepper noise
         """
-        print("Adding gaussian noise to image...", flush=True); t = time()
+        t0 = time()
+        print("Adding gaussian noise to image...", flush=True)
 
         B = self.copy()
 
@@ -508,17 +525,20 @@ class Image:
         
         B.invalidateLazies()
 
-        print(f"Done making noisy in {time()-t}s")
-        return B
+        t1 = time()-t0
+        print(f"Done making noisy in {t1}s")
+        return B if not self.timer else (B, t1)
     
     @staticmethod
-    def fromFile(path):
+    def fromFile(path, timer=False):
         """Takes in a path to an image file and creates a new
         Image object from it. If the path is a directory, calls
         `Image.fromDir()` instead and returns its results.
 
         Arguments:
             path (str): The path to the desired image
+            timer (boolean): Whether or not to have image processing
+                methods of this object return their run time
         
         Returns:
             An Image if the path is a file, a list of Images if
@@ -530,19 +550,21 @@ class Image:
         rgb_matrix = cv2.imread(path)
         if rgb_matrix is not None:
             rgb_matrix = cv2.cvtColor(rgb_matrix, cv2.COLOR_BGR2RGB)
-            return Image(rgb_matrix)
+            return Image(rgb_matrix, timer=timer)
         else:
             print(f"Error reading file {path}")
             return None
 
 
     @staticmethod
-    def fromDir(path):
+    def fromDir(path, timer=False):
         """Takes in a filepath and loads it as an image,
         recursing down if the path is a directory
 
         Arguments:
             path (str): The path of the file/directory
+            timer (boolean): Whether or not to have image processing
+                methods of this object return their run time
         
         Returns:
             list: A list of new Image objects
@@ -555,7 +577,7 @@ class Image:
             rgb_matrix = cv2.imread(path)
             if rgb_matrix is not None:
                 rgb_matrix = cv2.cvtColor(rgb_matrix, cv2.COLOR_BGR2RGB)
-                images.append(Image(rgb_matrix))
+                images.append(Image(rgb_matrix, timer=timer))
             else:
                 print(f"Error reading file {path}, skipping")
         return images
