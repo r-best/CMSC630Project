@@ -65,7 +65,7 @@ class Image:
         Returns
             Image: A deep copy of this Image object
         """
-        ret = Image(self.getMatrix())
+        ret = Image(self.getMatrix(), timer=self.timer)
         ret.matrix = copy.deepcopy(self.matrix)
         ret.histogram = copy.deepcopy(self.histogram)
         return ret
@@ -90,6 +90,8 @@ class Image:
                 of value x. If multiple color channels are used, they will be
                 indexed as array[x][channel].
         """
+        t0 = time()
+
         if self.histogram[color] is None: # If this color hasn't been calculated yet, do it
             if color == self.COLOR_RGB: # RGB is just stack of R, G, and B (three single-channels)
                 self.histogram[color] = np.stack((
@@ -103,7 +105,7 @@ class Image:
                     for pixel in row:
                         self.histogram[color][pixel] += 1
         
-        return self.histogram[color]
+        return self.histogram[color] if not self.timer else (self.histogram[color], time()-t0)
 
     def getMatrix(self, color=3):
         """Returns the Image's pixel matrix with
@@ -545,7 +547,7 @@ class Image:
             the path is a directory, or None if the path is invalid
         """
         if os.path.isdir(path):
-            return Image.fromDir(path)
+            return Image.fromDir(path, timer=timer)
         
         rgb_matrix = cv2.imread(path)
         if rgb_matrix is not None:
@@ -572,7 +574,7 @@ class Image:
         images = list()
         if os.path.isdir(path):
             for f in os.listdir(path):
-                images += Image.fromDir(os.path.join(path, f))
+                images += Image.fromDir(os.path.join(path, f), timer=timer)
         else:
             rgb_matrix = cv2.imread(path)
             if rgb_matrix is not None:
