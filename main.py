@@ -1,9 +1,13 @@
+import os
 from cmsc630 import Image
 import numpy as np
+from time import time
 import matplotlib.pyplot as plt
 
 
 def display(img):
+    """Display all color channels of an image
+    """
     fig = plt.figure(figsize=(8,8))
 
     fig.add_subplot(3, 2, 1)
@@ -22,20 +26,32 @@ def display(img):
     plt.show()
 
 
-x = Image.fromDir("./test/2.png")[0]
-# y = x.equalize()
-x = x.quantize(delta=31, technique=Image.QUANT_MEDIAN)
-# y = x.filter([[ 0, 0, 0 ],
-#                    [ 0, 1, 1 ],
-#                    [ 0, 0, 0 ]])
-# y = x.filter(np.ones((35, 35)), strategy=Image.FILTER_STRAT_MEAN, border=Image.FILTER_BORDER_EXTEND)
-# x = x.quantize()
 
-# filter = np.zeros((101, 101))
-# filter[50, 50] = -1
-# y = x.filter(filter, border=Image.FILTER_BORDER_PAD)
+CLASSES = [ "cyl", "inter", "let", "mod", "para", "super", "svar" ]
 
-display(x)
+data = dict()
+avg_hist = dict()
+
+for filepath in os.listdir("./train"):
+    for prefix in CLASSES:
+        if filepath.startswith(prefix):
+            if prefix not in data:
+                data[prefix] = list()
+                avg_hist[prefix] = np.zeros(256)
+            img = Image.fromFile(f"./train/{filepath}", timer=True)
+            if img is not None: data[prefix].append(img)
+            break
 
 
-# print(np.zeros((1, 3), dtype='int'))
+fig = plt.figure()
+
+for i, prefix in enumerate(CLASSES):
+    for img in data[prefix]:
+        avg_hist[prefix] += img.getHistogram(color=Image.COLOR_GRAYSCALE)[0]
+    avg_hist[prefix] = avg_hist[prefix] / len(data[prefix])
+
+    a1 = plt.subplot(3, 3, i+1)
+    a1.set_title(prefix)
+    a1.bar(range(256), avg_hist[prefix])
+
+plt.show()
