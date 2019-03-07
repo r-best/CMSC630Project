@@ -205,7 +205,7 @@ class Image:
             B.matrix[color] = self._equalize(B, color)
         
         # Invalidate cached matrices if R, G, or B was edited
-        if color in [0,1,2]: B.invalidateLazies()
+        if color in [0,1,2,3]: B.invalidateLazies()
 
         t1 = time()-t0
         print(f"Done equalizing in {t1}s")
@@ -264,7 +264,7 @@ class Image:
             B.matrix[color] = self._quantize(B, delta, technique, color=color)
         
         # Invalidate cached matrices if R, G, or B was edited
-        if color in [0,1,2]: B.invalidateLazies()
+        if color in [0,1,2,3]: B.invalidateLazies()
 
         t1 = time()-t0
         print(f"Done quantizing in {t1}s...", end="", flush=True)
@@ -376,7 +376,7 @@ class Image:
             B.matrix[color] = self._filter(B, filter, strategy, border, color=color)
         
         # Invalidate cached matrices if R, G, or B was edited
-        if color in [0,1,2]: B.invalidateLazies()
+        if color in [0,1,2,3]: B.invalidateLazies()
 
         t1 = time()-t0
         print(f"Done filtering in {t1}s")
@@ -487,7 +487,7 @@ class Image:
                         B.matrix[self.COLOR_BLUE][i][j] = new_value
         
         # Invalidate cached matrices if R, G, or B was edited
-        if color in [0,1,2]: B.invalidateLazies()
+        if color in [0,1,2,3]: B.invalidateLazies()
 
         t1 = time()-t0
         print(f"Done making noisy in {t1}s")
@@ -530,7 +530,7 @@ class Image:
         B._normalize(color)
         
         # Invalidate cached matrices if R, G, or B was edited
-        if color in [0,1,2]: B.invalidateLazies()
+        if color in [0,1,2,3]: B.invalidateLazies()
 
         t1 = time()-t0
         print(f"Done making noisy in {t1}s")
