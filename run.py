@@ -4,24 +4,46 @@ import logging
 import numpy as np
 from time import time
 from pprint import pprint
+from pathos.pools import ProcessPool
 
 from cmsc630 import Image
 
 
 OPERATIONS = ['equalize', 'quantize', 'filter', 'gaussiannoise', 'saltnpeppernoise']
+PARALLEL_UNSAFE_OPS = ['filter']
 COLOR_MAP = {'red': 0, 'green': 1, 'blue': 2, 'rgb': 3, 'gray': 4}
 
 
-def applyToBatch(batch, operation):
-    """
+def applyToBatch(batch, operation, parallel_safe):
+    """Takes in a batch of Images and a function to execute on them.
+    Executes the function on the entire batch in parallel if `parallel_safe`
+    is true, sequentially if false.
+    
+    IMPORTANT: `parallel_safe` can always be set to true to allow faster
+    processing of the batch UNLESS THE OPERATION IMPLEMENTS ITS OWN INTERNAL
+    PARALLELIZATION. Python doesn't like it when child processes spawn more
+    child processes, so parallelized operations must be executed sequentially
+    over the batch.
+
+    Arguments:
+        batch (Image[]): List of Image objects to operate on
+        operation (lambda Image: Image): Function that takes
+            in an Image object, performs an operation on it, and
+            returns an Image
+        parallel_safe (boolean): Whether or not this operation is
+            safe to parallelize across the batch
+    
+    Returns:
+        (Image[]): The batch after applying the operation to every Image
     """
     if operation is None:
         logging.info("Nothing to do")
         return batch
-
-    for image in batch:
-        image = operation(image)
-    return batch
+    
+    if parallel_safe:
+        return ProcessPool().map(operation, batch)
+    else:
+        return list(map(operation, batch))
 
 
 def parseFilter(filterList):
@@ -69,14 +91,16 @@ def main():
     with open("./config.yml", "r") as fp:
         conf = yaml.load(fp)
 
-    pprint(conf)
+    if 'dataDir' not in conf:
+        logging.fatal("Invalid configuration, 'dataDir' parameter must be specified")
+        exit()
 
-    images = Image.fromDir('./test')
+    images = Image.fromDir(conf['dataDir'])
     operations = []
 
     for item in conf['steps']:
         if 'name' not in item:
-            logging.fatal("ERROR: Invalid configuration, step must have a name")
+            logging.fatal("Invalid configuration, step must have a name")
             exit()
         if item['name'] not in OPERATIONS:
             logging.fatal("Invalid configuration, step name must be one of equalize, quantize, filter, gaussiannoise, or saltnpeppernoise")
@@ -143,7 +167,7 @@ def main():
                     rate=rate,
                     color=color
                 )
-            operations.append(op)
+            operations.append((op, item['name'] not in PARALLEL_UNSAFE_OPS))
         except KeyError as e:
             logging.fatal(f"Invalid configuration in '{item['name']}' step: must contain parameter '{e.args[0]}'"); exit()
         except ValueError as e:
@@ -152,7 +176,7 @@ def main():
             logging.fatal(traceback.format_exc()); exit()
     
     for op in operations:
-        images = applyToBatch(images, op)
+        images = applyToBatch(images, op[0], op[1])
 
 if __name__ == '__main__':
     main()
