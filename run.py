@@ -25,24 +25,42 @@ def applyToBatch(batch, operation):
 
 
 def parseFilter(filterList):
+    """Used to parse the matrix from the config file's `filter` step.
+    Filters should be provided as a list of rows, each row being a 
+    whitespace-separated string of numbers. The matrix must be square
+    with an odd height and width so that it has a clear centerpoint.
+
+    Examples:
+    ```yml
+    filter:
+      - -1 0 1              [[-1 0 1]
+      - -1 0 1      =>       [-1 0 1]   # Prewitt Filter (Border Detection)
+      - -1 0 1               [-1 0 1]]
+    ```
+
+    Arguments:
+        filterlist (list): Array of strings, each string representing a
+            row of the filter as a set of numbers split by whitespace
+    
+    Returns:
+        (ndarray): The filterList parsed into a numpy matrix
     """
-    """
-    x = None
+    filter_mat = None
     for line in filterList:
         try:
             line = np.array([float(x) for x in line.split()])
             if line.shape[0] != len(filterList):
                 raise Exception("Filter must be square, pad with zeroes if you need a non-square filter")
 
-            if x is None:
-                x = line
+            if filter_mat is None:
+                filter_mat = line
             else:
-                x = np.vstack((x,line))
+                filter_mat = np.vstack((filter_mat,line))
         except ValueError:
             logging.fatal("Invalid configuration: filter must contain only numbers"); exit()
         except Exception as e:
             logging.fatal(e); exit()
-    return x
+    return filter_mat
 
 
 def main():
