@@ -30,11 +30,18 @@ def parseFilter(filterList):
     x = None
     for line in filterList:
         try:
-            line = np.array([int(x) for x in line.split()])
-            if x is None:   x = line
-            else:           x = np.vstack((x,line))
+            line = np.array([float(x) for x in line.split()])
+            if line.shape[0] != len(filterList):
+                raise Exception("Filter must be square, pad with zeroes if you need a non-square filter")
+
+            if x is None:
+                x = line
+            else:
+                x = np.vstack((x,line))
+        except ValueError:
+            logging.fatal("Invalid configuration: filter must contain only numbers"); exit()
         except Exception as e:
-            print(e)
+            logging.fatal(e); exit()
     return x
 
 
