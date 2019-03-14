@@ -98,11 +98,13 @@ def main():
     if 'outputDir' not in conf:
         logging.fatal("Invalid configuration, 'outputDir' parameter must be specified")
         exit()
-    if not os.path.isdir(os.path.join(os.getcwd(), conf['outputDir'])):
-        logging.fatal("Invalid configuration, output directory does not exist or is not a directory")
-        exit()
     if 'steps' not in conf or conf['steps'] is None:
         logging.warn("No steps are defined in the config file, no action to take")
+        exit()
+    
+    output_dir = os.path.join(os.getcwd(), conf['outputDir'])
+    if os.path.exists(output_dir) and not os.path.isdir(output_dir):
+        logging.fatal("Invalid configuration, output directory is a file")
         exit()
 
     images = Image.fromDir(conf['inputDir'])
@@ -193,7 +195,7 @@ def main():
         images = applyToBatch(images, op[0], op[1])
     
     for image in images:
-        image.saveToFile(conf['outputDir'])
+        image.saveToFile(output_dir)
 
 
 if __name__ == '__main__':
