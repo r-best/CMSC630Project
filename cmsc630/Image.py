@@ -1,9 +1,12 @@
 import os
 import cv2
 import copy
+import logging
 import numpy as np
 from time import time
 import pathos.pools as pp
+
+logging.basicConfig(format="%(levelname)s: %(message)s")
 
 class Image:
     """Represents an image and provides methods for interacting
@@ -544,9 +547,24 @@ class Image:
             dir (str): Directory to save the file to
             name (str): The name of the file to save to, defaults to the
                 name of the file this Image was loaded from
+        
+        Returns:
+            (boolean): Whether or not the file was saved correctly
         """
-        rgb_matrix = cv2.cvtColor(self.getMatrix(Image.COLOR_RGB), cv2.COLOR_RGB2BGR)
-        cv2.imwrite(os.path.join(dir, self.name if name is None else name), rgb_matrix)
+        path = os.path.join(dir, self.name if name is None else name)
+        if not os.path.exists(dir):
+            logging.warn(f"Directory '{dir}' does not exist, creating it and continuing")
+            os.mkdir(dir)
+        if not os.path.isdir(dir):
+            logging.error(f"Cannot save image: '{dir}' is a file")
+            return False
+        try:
+            rgb_matrix = cv2.cvtColor(self.getMatrix(Image.COLOR_RGB), cv2.COLOR_RGB2BGR)
+            cv2.imwrite(path, rgb_matrix)
+            return True
+        except Exception as e:
+            logging.fatal(f"Error saving file: {e}")
+            return False
     
     @staticmethod
     def fromFile(path, timer=False):
