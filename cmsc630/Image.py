@@ -195,7 +195,7 @@ class Image:
             Image: A new copy of the original image, equalized according to parameters
         """
         t0 = time()
-        print("Equalizing image...", flush=True)
+        logging.info("Equalizing image...")
 
         B = self.copy()
 
@@ -212,7 +212,7 @@ class Image:
         if color in [0,1,2,3]: B.invalidateLazies()
 
         t1 = time()-t0
-        print(f"Done equalizing in {t1}s")
+        logging.info(f"Done equalizing in {t1}s")
         return B if not self.timer else (B, t1)
     def _equalize(self, B, color):
         """Helper function for `Image.equalize()`, performs the math to equalize a
@@ -232,7 +232,7 @@ class Image:
         for i, level in enumerate(self.getHistogram(color)):
             total += level/num_pixels
             cdf[i] = int(total * 255)
-        
+
         return cdf[B.getMatrix(color)]
     
     def quantize(self, delta=16, technique='uniform', color=3):
@@ -249,7 +249,7 @@ class Image:
             Image: A new copy of the original image, quantized according to parameters
         """
         t0 = time()
-        print("Quantizing image...", flush=True)
+        logging.info("Quantizing image...")
 
         if(self.matrix[color] is None):
             self.getMatrix(color)
@@ -271,7 +271,7 @@ class Image:
         if color in [0,1,2,3]: B.invalidateLazies()
 
         t1 = time()-t0
-        print(f"Done quantizing in {t1}s...", end="", flush=True)
+        logging.info(f"Done quantizing in {t1}s...")
 
         # Calculate mean squared quantization error
         t0_msqe = time()
@@ -281,7 +281,7 @@ class Image:
             MSQE += np.square(self.getHistogram(color)[i] - B.getHistogram(color)[i]) * pdf[i]
 
         t1_msqe = time()-t0_msqe
-        print(f"MSQE of {MSQE} (computed in {t1_msqe}s)")
+        logging.info(f"MSQE of {MSQE} (computed in {t1_msqe}s)")
         return B if not self.timer else (B, t1, t1_msqe)
     def _quantize(self, B, delta, technique, color):
         """Helper function for `Image.quantize()`, performs the math to quantize a
@@ -300,7 +300,7 @@ class Image:
         buckets = list(range(0, 256, delta))
         if buckets[-1] != 256: buckets[-1] = 256
 
-        print(f"Quantizing with '{technique}' technique to {len(buckets)-1} color levels")
+        logging.info(f"Quantizing with '{technique}' technique to {len(buckets)-1} color levels")
 
         # Go through each bucket and reassign the pixels in them to a new value
         # depending on the technique
@@ -357,7 +357,7 @@ class Image:
             A new copy of this Image object with the filter applied to the desired color channel(s)
         """
         t0 = time()
-        print("Filtering image...", flush=True)
+        logging.info("Filtering image...")
 
         if filter is None:
             return "Please specify a filter to use"
@@ -383,7 +383,7 @@ class Image:
         if color in [0,1,2,3]: B.invalidateLazies()
 
         t1 = time()-t0
-        print(f"Done filtering in {t1}s")
+        logging.info(f"Done filtering in {t1}s")
         return B if not self.timer else (B, t1)
     def _filter(self, B, filter, strategy, border, color):
         """Helper function for `Image.filter()`, performs the math to apply the filter to a
@@ -476,7 +476,7 @@ class Image:
             Image: A new copy of the original image, corrupted with salt & pepper noise
         """
         t0 = time()
-        print("Adding salt&pepper noise to image...", flush=True)
+        logging.info("Adding salt&pepper noise to image...")
 
         B = self.copy()
 
@@ -494,7 +494,7 @@ class Image:
         if color in [0,1,2,3]: B.invalidateLazies()
 
         t1 = time()-t0
-        print(f"Done making noisy in {t1}s")
+        logging.info(f"Done making noisy in {t1}s")
         return B if not self.timer else (B, t1)
     
     def makeGaussianNoise(self, rate=0.30, mean=None, stddev=None, color=3):
@@ -514,7 +514,7 @@ class Image:
             Image: A new copy of the original image, corrupted with salt & pepper noise
         """
         t0 = time()
-        print("Adding gaussian noise to image...", flush=True)
+        logging.info("Adding gaussian noise to image...")
 
         B = self.copy()
 
@@ -537,7 +537,7 @@ class Image:
         if color in [0,1,2,3]: B.invalidateLazies()
 
         t1 = time()-t0
-        print(f"Done making noisy in {t1}s")
+        logging.info(f"Done making noisy in {t1}s")
         return B if not self.timer else (B, t1)
 
     def saveToFile(self, dir, name=None):
@@ -559,7 +559,8 @@ class Image:
             logging.error(f"Cannot save image: '{dir}' is a file")
             return False
         try:
-            rgb_matrix = cv2.cvtColor(self.getMatrix(Image.COLOR_RGB), cv2.COLOR_RGB2BGR)
+            rgb_matrix = np.uint8(self.getMatrix(Image.COLOR_RGB))
+            rgb_matrix = cv2.cvtColor(rgb_matrix, cv2.COLOR_RGB2BGR)
             cv2.imwrite(path, rgb_matrix)
             return True
         except Exception as e:
@@ -589,7 +590,7 @@ class Image:
             rgb_matrix = cv2.cvtColor(rgb_matrix, cv2.COLOR_BGR2RGB)
             return Image(os.path.basename(path), rgb_matrix, timer=timer)
         else:
-            print(f"Error reading file {path}")
+            logging.error(f"Error reading file {path}")
             return None
 
 
@@ -616,5 +617,5 @@ class Image:
                 rgb_matrix = cv2.cvtColor(rgb_matrix, cv2.COLOR_BGR2RGB)
                 images.append(Image(os.path.basename(path), rgb_matrix, timer=timer))
             else:
-                print(f"Error reading file {path}, skipping")
+                logging.error(f"Error reading file {path}, skipping")
         return images
