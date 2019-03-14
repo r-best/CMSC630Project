@@ -1,10 +1,8 @@
 import os
 import yaml
-import traceback
 import logging
+import traceback
 import numpy as np
-from time import time
-from pprint import pprint
 from pathos.pools import ProcessPool
 
 from cmsc630 import Image
