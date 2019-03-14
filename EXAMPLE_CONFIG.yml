@@ -1,4 +1,5 @@
 dataDir: ./train
+outputDir: ./train_proc
 steps:
   - name: equalize
     color: rgb

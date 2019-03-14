@@ -47,7 +47,8 @@ class Image:
     FILTER_BORDER_PAD = 'pad'
     FILTER_BORDER_EXTEND = 'extend'
 
-    def __init__(self, matrix, timer=False):
+    def __init__(self, name, matrix, timer=False):
+        self.name = name
         self.matrix = [
             matrix[:,:,self.COLOR_RED],
             matrix[:,:,self.COLOR_GREEN],
@@ -65,7 +66,7 @@ class Image:
         Returns
             Image: A deep copy of this Image object
         """
-        ret = Image(self.getMatrix(), timer=self.timer)
+        ret = Image(self.name, self.getMatrix(), timer=self.timer)
         ret.matrix = copy.deepcopy(self.matrix)
         ret.histogram = copy.deepcopy(self.histogram)
         return ret
@@ -535,6 +536,17 @@ class Image:
         t1 = time()-t0
         print(f"Done making noisy in {t1}s")
         return B if not self.timer else (B, t1)
+
+    def saveToFile(self, dir, name=None):
+        """Takes in a directory path and saves the Image to that directory
+
+        Arguments:
+            dir (str): Directory to save the file to
+            name (str): The name of the file to save to, defaults to the
+                name of the file this Image was loaded from
+        """
+        rgb_matrix = cv2.cvtColor(self.getMatrix(Image.COLOR_RGB), cv2.COLOR_RGB2BGR)
+        cv2.imwrite(os.path.join(dir, self.name if name is None else name), rgb_matrix)
     
     @staticmethod
     def fromFile(path, timer=False):
@@ -557,7 +569,7 @@ class Image:
         rgb_matrix = cv2.imread(path)
         if rgb_matrix is not None:
             rgb_matrix = cv2.cvtColor(rgb_matrix, cv2.COLOR_BGR2RGB)
-            return Image(rgb_matrix, timer=timer)
+            return Image(os.path.basename(path), rgb_matrix, timer=timer)
         else:
             print(f"Error reading file {path}")
             return None
@@ -584,7 +596,7 @@ class Image:
             rgb_matrix = cv2.imread(path)
             if rgb_matrix is not None:
                 rgb_matrix = cv2.cvtColor(rgb_matrix, cv2.COLOR_BGR2RGB)
-                images.append(Image(rgb_matrix, timer=timer))
+                images.append(Image(os.path.basename(path), rgb_matrix, timer=timer))
             else:
                 print(f"Error reading file {path}, skipping")
         return images

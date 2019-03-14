@@ -1,3 +1,4 @@
+import os
 import yaml
 import traceback
 import logging
@@ -91,11 +92,20 @@ def main():
     with open("./config.yml", "r") as fp:
         conf = yaml.load(fp)
 
-    if 'dataDir' not in conf:
-        logging.fatal("Invalid configuration, 'dataDir' parameter must be specified")
+    if 'inputDir' not in conf:
+        logging.fatal("Invalid configuration, 'inputDir' parameter must be specified")
+        exit()
+    if 'outputDir' not in conf:
+        logging.fatal("Invalid configuration, 'outputDir' parameter must be specified")
+        exit()
+    if not os.path.isdir(os.path.join(os.getcwd(), conf['outputDir'])):
+        logging.fatal("Invalid configuration, output directory does not exist or is not a directory")
+        exit()
+    if 'steps' not in conf or conf['steps'] is None:
+        logging.warn("No steps are defined in the config file, no action to take")
         exit()
 
-    images = Image.fromDir(conf['dataDir'])
+    images = Image.fromDir(conf['inputDir'])
     operations = []
 
     for item in conf['steps']:
@@ -167,6 +177,9 @@ def main():
                     rate=rate,
                     color=color
                 )
+            else: raise ValueError(f"operation name '{item['name']}' not recognized")
+
+            # Add operation to list of operations to perform
             operations.append((op, item['name'] not in PARALLEL_UNSAFE_OPS))
         except KeyError as e:
             logging.fatal(f"Invalid configuration in '{item['name']}' step: must contain parameter '{e.args[0]}'"); exit()
@@ -175,8 +188,13 @@ def main():
         except Exception as e:
             logging.fatal(traceback.format_exc()); exit()
     
+    # Perform all the operations on the batch in order
     for op in operations:
         images = applyToBatch(images, op[0], op[1])
+    
+    for image in images:
+        image.saveToFile(conf['outputDir'])
+
 
 if __name__ == '__main__':
     main()
