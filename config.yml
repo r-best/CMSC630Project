@@ -1,19 +1,14 @@
 inputDir: ./test
 outputDir: ./test_proc
+outputColor: rgb
 steps:
-  # - name: filter
-  #   color: rgb
-  #   filter:
-  #     - -1 0 1
-  #     - -1 0 1
-  #     - -1 0 1
-  #   strategy: linear
-  #   border: ignore
-  - name: gaussiannoise
-    color: rgb
-    rate: 0.30
-    mean: null
-    stddev: null
-  - name: saltnpeppernoise
-    color: rgb
-    rate: 0.30
+  - name: equalize
+    color: red
+  - name: filter
+    color: red
+    filter:
+      - -1 0 1
+      - -1 0 1
+      - -1 0 1
+    strategy: linear
+    border: ignore

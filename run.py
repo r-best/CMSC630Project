@@ -35,6 +35,7 @@ def applyToBatch(batch, operation, parallel_safe):
     Returns:
         (Image[]): The batch after applying the operation to every Image
     """
+    print("Applying operation...")
     if operation is None:
         logging.info("Nothing to do")
         return batch
@@ -104,6 +105,14 @@ def main():
     if os.path.exists(output_dir) and not os.path.isdir(output_dir):
         logging.fatal("Invalid configuration, output directory is a file")
         exit()
+    
+    if 'outputColor' not in conf:
+        save_color = Image.COLOR_RGB
+    elif conf['outputColor'] not in COLOR_MAP.keys():
+        logging.fatal("Invalid configuration, 'outputColor' must be one of 'red', 'blue', 'green', 'rgb', or 'gray'")
+        exit()
+    else:
+        save_color = COLOR_MAP[conf['outputColor']]
 
     images = Image.fromDir(conf['inputDir'])
     operations = []
@@ -193,7 +202,7 @@ def main():
         images = applyToBatch(images, op[0], op[1])
     
     for image in images:
-        image.saveToFile(output_dir)
+        image.saveToFile(output_dir, color=save_color)
 
 
 if __name__ == '__main__':

@@ -540,7 +540,7 @@ class Image:
         logging.info(f"Done making noisy in {t1}s")
         return B if not self.timer else (B, t1)
 
-    def saveToFile(self, dir, name=None):
+    def saveToFile(self, dir, name=None, color=3):
         """Takes in a directory path and saves the Image to that directory
 
         Arguments:
@@ -559,9 +559,16 @@ class Image:
             logging.error(f"Cannot save image: '{dir}' is a file")
             return False
         try:
-            rgb_matrix = np.uint8(self.getMatrix(Image.COLOR_RGB))
-            rgb_matrix = cv2.cvtColor(rgb_matrix, cv2.COLOR_RGB2BGR)
-            cv2.imwrite(path, rgb_matrix)
+            output = np.uint8(self.getMatrix(color))
+
+            if color != Image.COLOR_GRAYSCALE:
+                zero = np.zeros((self.getMatrix().shape[:2]), dtype="uint8")
+                if color == Image.COLOR_RED:        output = np.stack((output, zero, zero), axis=2)
+                elif color == Image.COLOR_GREEN:    output = np.stack((zero, output, zero), axis=2)
+                elif color == Image.COLOR_BLUE:     output = np.stack((zero, zero, output), axis=2)
+                output = cv2.cvtColor(output, cv2.COLOR_RGB2BGR)
+
+            cv2.imwrite(path, output)
             return True
         except Exception as e:
             logging.fatal(f"Error saving file: {e}")
