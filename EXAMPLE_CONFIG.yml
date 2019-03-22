@@ -1,26 +1,26 @@
 inputDir: ./train
 outputDir: ./train_proc
-outputColor: rgb
+outputColor: rgb | red | green | blue | gray
 steps:
   - name: equalize
-    color: rgb
+    color: rgb | red | green | blue | gray
   - name: quantize
-    color: rgb
+    color: rgb | red | green | blue | gray
     delta: 16
-    technique: uniform
+    technique: uniform | mean | median
   - name: filter
-    color: rgb
+    color: rgb | red | green | blue | gray
     filter:
       - -1 0 1
       - -1 0 1
       - -1 0 1
-    strategy: linear
-    border: ignore
+    strategy: linear | mean | median
+    border: ignore | crop | pad | extend
   - name: gaussiannoise
-    color: rgb
+    color: rgb | red | green | blue | gray
     rate: 0.30
     mean: null
     stddev: null
   - name: saltnpeppernoise
-    color: rgb
+    color: rgb | red | green | blue | gray
     rate: 0.30
