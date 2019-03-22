@@ -104,7 +104,7 @@ class Image:
                     self.getHistogram(self.COLOR_BLUE),
                 ), axis=1)
             else: # The single-channel histograms (R, G, B, Gray) can be calculated as follows
-                self.histogram[color] = np.zeros(256, dtype="int")
+                self.histogram[color] = np.zeros(256, dtype="uint8")
                 for row in self.getMatrix(color):
                     for pixel in row:
                         self.histogram[color][pixel] += 1
@@ -179,10 +179,10 @@ class Image:
 
         # Normalize pixel values, make sure they're all within the 0-255 range
         if np.min(self.matrix[color]) < 0:
-            np.add(self.matrix[color], -1*np.min(self.matrix[color]))
+            self.matrix[color] = np.add(self.matrix[color], -1*np.min(self.matrix[color]))
         if np.max(self.matrix[color]) > 255:
             scale = 255/np.max(self.matrix[color])
-            np.multiply(self.matrix[color], scale)
+            self.matrix[color] = np.multiply(self.matrix[color], scale)
     
     def equalize(self, color=3):
         """Returns a new copy of this Image object that has been equalized
@@ -323,6 +323,8 @@ class Image:
                     values = np.concatenate((values, np.full((value), value, dtype='int')))
                 median = np.floor(np.median(bucket))
                 B.matrix[color][np.where(np.isin(self.matrix[color][:], bucket))] = median
+        
+        B._normalize(color)
         return B.matrix[color]
 
     
