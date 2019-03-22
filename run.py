@@ -3,6 +3,7 @@ import yaml
 import logging
 import traceback
 import numpy as np
+from time import time
 from pathos.pools import ProcessPool
 
 from cmsc630 import Image
@@ -35,15 +36,19 @@ def applyToBatch(batch, operation, parallel_safe):
     Returns:
         (Image[]): The batch after applying the operation to every Image
     """
-    print("Applying operation...")
+    logging.info("Applying operation to batch..."); t0 = time()
     if operation is None:
         logging.info("Nothing to do")
         return batch
     
     if parallel_safe:
-        return ProcessPool().map(operation, batch)
+        ret = ProcessPool().map(operation, batch)
     else:
-        return list(map(operation, batch))
+        ret = list(map(operation, batch))
+    
+    t = time()-t0
+    logging.info(f"Finished applying to batch in {t}s, average time per image was {t/len(batch)}s")
+    return ret
 
 
 def parseFilter(filterList):
@@ -87,6 +92,7 @@ def parseFilter(filterList):
 
 def main():
     logging.basicConfig(format="%(levelname)s: %(message)s")
+    logging.getLogger().setLevel("INFO")
 
     with open("./config.yml", "r") as fp:
         conf = yaml.load(fp)
