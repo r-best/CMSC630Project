@@ -1,0 +1,34 @@
+inputDir: ./test/1.png
+outputDir: ./test_proc
+outputColor: rgb
+steps:
+  - name: equalize
+    color: rgb
+  - name: quantize
+    color: rgb
+    delta: 16
+    technique: uniform
+  - name: quantize
+    color: rgb
+    delta: 16
+    technique: mean
+  - name: quantize
+    color: rgb
+    delta: 16
+    technique: median
+  - name: filter
+    color: rgb
+    filter:
+      - -1 0 1
+      - -1 0 1
+      - -1 0 1
+    strategy: linear
+    border: ignore
+  - name: gaussiannoise
+    color: rgb
+    rate: 0.30
+    mean: null
+    stddev: null
+  - name: saltnpeppernoise
+    color: rgb
+    rate: 0.30
