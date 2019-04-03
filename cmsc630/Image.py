@@ -63,7 +63,7 @@ class Image():
         self.timer = timer
     
     from .utils import getHistogram, getMatrix, getGrayscale, equalize, _equalize, quantize, _quantize
-    from .filters import filter, _filter
+    from .filters import filter, _filter, sobel, prewitt, _edgeFilter
     from .noise import makeGaussianNoise, makeSaltnPepperNoise
 
     def copy(self):
