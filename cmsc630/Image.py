@@ -53,9 +53,9 @@ class Image():
     def __init__(self, name, matrix, timer=False):
         self.name = name
         self.matrix = [
-            matrix[:,:,self.COLOR_RED],
-            matrix[:,:,self.COLOR_GREEN],
-            matrix[:,:,self.COLOR_BLUE],
+            np.uint8(matrix[:,:,self.COLOR_RED]),
+            np.uint8(matrix[:,:,self.COLOR_GREEN]),
+            np.uint8(matrix[:,:,self.COLOR_BLUE]),
             matrix,
             None
         ]
@@ -64,6 +64,7 @@ class Image():
     
     from .utils import getHistogram, getMatrix, getGrayscale, equalize, _equalize, quantize, _quantize
     from .filters import filter, _filter, sobel, prewitt, _edgeFilter
+    from .segment import threshold, _threshold
     from .noise import makeGaussianNoise, makeSaltnPepperNoise
 
     def copy(self):
