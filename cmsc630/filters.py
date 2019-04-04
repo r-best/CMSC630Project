@@ -140,6 +140,26 @@ def _filter(self, B, filter, strategy, border, color):
 
     return Bmat
 
+def laplace(self, color=3):
+    """
+    """
+    s = np.array([
+        [0,  1,  0],
+        [1, -4,  1],
+        [0,  1,  0]
+    ])
+
+    B = self.filter(s, color=color)
+    
+    if color == self.COLOR_RGB:
+        B.matrix[0] = self.getMatrix(0) - B.getMatrix(0)
+        B.matrix[1] = self.getMatrix(1) - B.getMatrix(1)
+        B.matrix[2] = self.getMatrix(2) - B.getMatrix(2)
+    else:
+        B.matrix[color] = self.getMatrix(color) - B.getMatrix(color)
+    
+    return B
+
 def sobel(self, dx, dy, color=3):
     """
     """
