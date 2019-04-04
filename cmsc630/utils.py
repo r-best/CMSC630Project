@@ -80,7 +80,7 @@ def getGrayscale(self, luminosity=False, force=False):
             w = [0.33, 0.33, 0.33]
         self.matrix[self.COLOR_GRAYSCALE] = np.sum(
             np.multiply(self.getMatrix(color=self.COLOR_RGB), w),
-            axis=2, dtype="int")
+            axis=2, dtype=np.uint8)
 
     return self.matrix[self.COLOR_GRAYSCALE]
 
