@@ -198,11 +198,11 @@ def _edgeFilter(self, sx, sy, dx, dy, color=3):
     
     if dx != 0 and dy != 0:
         if color == self.COLOR_RGB:
-            x.matrix[0] = np.mean([x.matrix[0], y.matrix[0]], axis=0)
-            x.matrix[1] = np.mean([x.matrix[1], y.matrix[1]], axis=0)
-            x.matrix[2] = np.mean([x.matrix[2], y.matrix[2]], axis=0)
+            x.matrix[0] = np.uint8(np.sqrt(np.square(x.matrix[0]) + np.square(y.matrix[0])))
+            x.matrix[1] = np.uint8(np.sqrt(np.square(x.matrix[1]) + np.square(y.matrix[1])))
+            x.matrix[2] = np.uint8(np.sqrt(np.square(x.matrix[2]) + np.square(y.matrix[2])))
         else:
-            x.matrix[color] = np.mean([x.matrix[color], y.matrix[color]], axis=0)
+            x.matrix[color] = np.uint8(np.sqrt(np.square(x.matrix[color]) + np.square(y.matrix[color])))
         return x
     elif dx != 0:
         return x
