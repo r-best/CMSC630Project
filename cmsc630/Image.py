@@ -64,7 +64,7 @@ class Image():
     
     from .utils import getHistogram, getMatrix, getGrayscale, equalize, _equalize, quantize, _quantize
     from .filters import filter, _filter, sobel, prewitt, _edgeFilter
-    from .segment import threshold, _threshold
+    from .segment import threshold, _threshold, kmeans
     from .noise import makeGaussianNoise, makeSaltnPepperNoise
 
     def copy(self):

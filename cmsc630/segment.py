@@ -2,10 +2,29 @@ import logging
 import numpy as np
 from time import time
 
+
+def kmeans(self, k, epochs=30, color=3):
+    """
+    """
+    centers = np.random.choice(256, size=k)
+    for _ in range(epochs):
+        assignments = list(np.full(k, -1))
+        for row in self.getMatrix(color):
+            for pixel in row:
+                closest_center = np.argmin(np.abs(centers-pixel))
+                if assignments[closest_center] == -1: assignments[closest_center] = list()
+                assignments[closest_center].append(pixel)
+        changed_indices = [i for i in range(len(assignments)) if assignments[i] != -1]
+        for center in changed_indices:
+            centers[center] = np.mean(assignments[center])
+        print(centers)
+    return self.threshold(centers, color=color)
+
+
 def threshold(self, levels, color=3):
     """
     """
-    if type(levels) is not list:
+    if type(levels) is not list and type(levels) is not np.ndarray:
         levels = [levels]
     levels = np.sort(levels)
 
