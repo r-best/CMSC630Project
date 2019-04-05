@@ -231,40 +231,47 @@ def _gradient(self, filt_x, filt_y, dx, dy, color=3):
 def canny(self, minEdge=100, maxEdge=200, color=3):
     """
     """
+    print("Starting canny")
     # Gradient and edge direction calculation
     B, directions = self.sobel(1, 1, color=color)
 
-    C = B.copy()
+    if color == self.COLOR_RGB:
+        B.matrix[self.COLOR_RED] = _canny(B.getMatrix(self.COLOR_RED), directions[0], minEdge, maxEdge, self.COLOR_RED)
+        B.matrix[self.COLOR_GREEN] = _canny(B.getMatrix(self.COLOR_GREEN), directions[1], minEdge, maxEdge, self.COLOR_GREEN)
+        B.matrix[self.COLOR_BLUE] = _canny(B.getMatrix(self.COLOR_BLUE), directions[2], minEdge, maxEdge, self.COLOR_BLUE)
+    else:
+        B.matrix[color] = _canny(B.getMatrix(color), directions, minEdge, maxEdge, color)
+    print("Done")
+    return B
+def _canny(b, directions, minEdge, maxEdge, color):
+    print("A")
+    c = np.copy(b)
 
     # Non-maximum suppression
-    mat = B.getMatrix(color)
-    for i in range(1, mat.shape[0]-1):
-        for j in range(1, mat.shape[1]-1):
+    for i in range(1, b.shape[0]-1):
+        for j in range(1, b.shape[1]-1):
             if directions[i,j] == 0: # E-W edges
-                argmax = np.argmax([mat[i,j], mat[i,j-1], mat[i,j+1]])
+                argmax = np.argmax([b[i,j], b[i,j-1], b[i,j+1]])
             elif directions[i,j] == 1: # SW-NE edges
-                argmax = np.argmax([mat[i,j], mat[i-1,j+1], mat[i+1,j-1]])
+                argmax = np.argmax([b[i,j], b[i-1,j+1], b[i+1,j-1]])
             elif directions[i,j] == 2: # N-S edges
-                argmax = np.argmax([mat[i,j], mat[i-1,j], mat[i+1,j]])
+                argmax = np.argmax([b[i,j], b[i-1,j], b[i+1,j]])
             elif directions[i,j] == 3: # NW-SE edges
-                argmax = np.argmax([mat[i,j], mat[i-1,j-1], mat[i+1,j+1]])
+                argmax = np.argmax([b[i,j], b[i-1,j-1], b[i+1,j+1]])
 
             if argmax != 0:
-                C.matrix[color][i,j] = 0
-    
-    D = C.copy()
-    
+                c[i,j] = 0
+    print("B")
     # Hysteresis thresholding
-    C.matrix[color][C.matrix[color]<=minEdge] = 0
-    C.matrix[color][C.matrix[color]>=maxEdge] = 255
-    D.matrix[color][(0,-1),:] = 0
-    D.matrix[color][:,(0,-1)] = 0
-    for i in range(1, mat.shape[0]-1):
-        for j in range(1, mat.shape[1]-1):
-            if np.max(C.matrix[color][i-1:i+2,j-1:j+2]) == 255:
-                D.matrix[color][i,j] = 255
+    c[c<=minEdge] = 0
+    c[c>=maxEdge] = 255
+    b[(0,-1),:] = 0
+    b[:,(0,-1)] = 0
+    for i in range(1, b.shape[0]-1):
+        for j in range(1, b.shape[1]-1):
+            if np.max(c[i-1:i+2,j-1:j+2]) == 255:
+                b[i,j] = 255
             else:
-                D.matrix[color][i,j] = 0
-    print(np.unique(D.matrix[color]))
+                b[i,j] = 0
 
-    return D
+    return b
