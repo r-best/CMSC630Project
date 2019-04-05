@@ -231,7 +231,6 @@ def _gradient(self, filt_x, filt_y, dx, dy, color=3):
 def canny(self, minEdge=100, maxEdge=200, color=3):
     """
     """
-    print("Starting canny")
     # Gradient and edge direction calculation
     B, directions = self.sobel(1, 1, color=color)
 
@@ -241,10 +240,8 @@ def canny(self, minEdge=100, maxEdge=200, color=3):
         B.matrix[self.COLOR_BLUE] = _canny(B.getMatrix(self.COLOR_BLUE), directions[2], minEdge, maxEdge, self.COLOR_BLUE)
     else:
         B.matrix[color] = _canny(B.getMatrix(color), directions, minEdge, maxEdge, color)
-    print("Done")
     return B
 def _canny(b, directions, minEdge, maxEdge, color):
-    print("A")
     c = np.copy(b)
 
     # Non-maximum suppression
@@ -261,7 +258,7 @@ def _canny(b, directions, minEdge, maxEdge, color):
 
             if argmax != 0:
                 c[i,j] = 0
-    print("B")
+
     # Hysteresis thresholding
     c[c<=minEdge] = 0
     c[c>=maxEdge] = 255
