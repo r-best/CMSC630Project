@@ -63,7 +63,7 @@ class Image():
         self.timer = timer
     
     from .utils import getHistogram, getMatrix, getGrayscale, equalize, _equalize, quantize, _quantize
-    from .filters import filter, _filter, sobel, prewitt, _edgeFilter, laplace
+    from .filters import filter, _filter, sobel, prewitt, _gradient, laplace, canny
     from .segment import threshold, _threshold, kmeans
     from .noise import makeGaussianNoise, makeSaltnPepperNoise
 

@@ -4,7 +4,7 @@ from time import time
 import pathos.pools as pp
 
 
-def filter(self, filter=None, strategy='linear', border='ignore', color=3):
+def filter(self, filter=None, strategy='linear', border='ignore', normalize=True, color=3):
     """Takes in a filter and applies it to each pixel of the Image, producing a new Image
     as output. The filter must be a square 2D array-like of odd degree (i.e. has a clear
     center pixel). However, non-square filters can be acheived by simply setting the entries
@@ -50,12 +50,12 @@ def filter(self, filter=None, strategy='linear', border='ignore', color=3):
     # If we want to apply filter to RGB, process R, G, and B separately and remash them into RGB
     # TODO Parallelize this?
     if color == self.COLOR_RGB:
-        B.matrix[self.COLOR_RED] = self._filter(B, filter, strategy, border, color=self.COLOR_RED)
-        B.matrix[self.COLOR_GREEN] = self._filter(B, filter, strategy, border, color=self.COLOR_GREEN)
-        B.matrix[self.COLOR_BLUE] = self._filter(B, filter, strategy, border, color=self.COLOR_BLUE)
+        B.matrix[self.COLOR_RED] = self._filter(B, filter, strategy, border, normalize, color=self.COLOR_RED)
+        B.matrix[self.COLOR_GREEN] = self._filter(B, filter, strategy, border, normalize, color=self.COLOR_GREEN)
+        B.matrix[self.COLOR_BLUE] = self._filter(B, filter, strategy, border, normalize, color=self.COLOR_BLUE)
     # Else we only want a single channel, so just do it & return it
     else:
-        B.matrix[color] = self._filter(B, filter, strategy, border, color=color)
+        B.matrix[color] = self._filter(B, filter, strategy, border, normalize, color=color)
     
     # Invalidate cached matrices if R, G, or B was edited
     if color in [0,1,2,3]: B.invalidateLazies()
@@ -63,7 +63,7 @@ def filter(self, filter=None, strategy='linear', border='ignore', color=3):
     t1 = time()-t0
     logging.info(f"Done filtering in {t1}s")
     return B if not self.timer else (B, t1)
-def _filter(self, B, filter, strategy, border, color):
+def _filter(self, B, filter, strategy, border, normalize, color):
     """Helper function for `Image.filter()`, performs the math to apply the filter to a
     single color channel
 
@@ -83,7 +83,7 @@ def _filter(self, B, filter, strategy, border, color):
     height_bottom = filter.shape[0] - height_top - 1
 
     mat = self.getMatrix(color)
-    Bmat = B.getMatrix(color)
+    Bmat = np.int64(B.getMatrix(color))
 
     def process_row(i):
         row = Bmat[i]
@@ -136,7 +136,9 @@ def _filter(self, B, filter, strategy, border, color):
             np.tile(filtered[-1], (height_bottom, 1))
         ))
 
-    B._normalize(color)
+    if normalize:
+        B._normalize(color)
+        Bmat = np.uint8(Bmat)
 
     return Bmat
 
@@ -163,48 +165,106 @@ def laplace(self, color=3):
 def sobel(self, dx, dy, color=3):
     """
     """
-    sx = np.array([
+    filt_x = np.array([
         [-1,  0,  1],
         [-2,  0,  2],
         [-1,  0,  1]
     ])
-    sy = np.array([
+    filt_y = np.array([
         [-1, -2, -1],
         [ 0,  0,  0],
         [ 1,  2,  1]
     ])
-    return self._edgeFilter(sx, sy, dx, dy, color=color)
+    return self._gradient(filt_x, filt_y, dx, dy, color=color)
 
 def prewitt(self, dx, dy, color=3):
     """
     """
-    sx = np.array([
+    filt_x = np.array([
         [-1,  0,  1],
         [-1,  0,  1],
         [-1,  0,  1]
     ])
-    sy = np.array([
+    filt_y = np.array([
         [-1, -1, -1],
         [ 0,  0,  0],
         [ 1,  1,  1]
     ])
-    return self._edgeFilter(sx, sy, dx, dy, color=color)
+    return self._gradient(filt_x, filt_y, dx, dy, color=color)
 
-def _edgeFilter(self, sx, sy, dx, dy, color=3):
+def _gradient(self, filt_x, filt_y, dx, dy, color=3):
+    """https://towardsdatascience.com/canny-edge-detection-step-by-step-in-python-computer-vision-b49c3a2d8123
     """
-    """
-    if dx != 0: x = self.filter(sx*dx, color=color)
-    if dy != 0: y = self.filter(sy*dy, color=color)
-    
+    def process_mat(x, y):
+        # Gradient and edge direction calculation
+        grad = np.sqrt(np.square(x) + np.square(y))
+
+        directions = np.arctan2(y, x) * 180 / np.pi
+        directions[directions<0] += 180
+        
+        directions[np.logical_or(
+            np.logical_and(directions>=0, directions<22.5),
+            np.logical_and(directions>=157.5, directions<=180)
+        )] = 0 # E-W edges (0)
+        directions[np.logical_and(directions>=22.5, directions<67.5)] = 1 # SW-NE edges (45)
+        directions[np.logical_and(directions>=67.5, directions<112.5)] = 2 # N-S edges (90)
+        directions[np.logical_and(directions>=112.5, directions<157.5)] = 3 # NW-SE edges (135)
+
+        return np.uint8(grad), directions
+
+    if dx != 0: x = self.filter(filt_x*dx, normalize=False, color=color)
+    if dy != 0: y = self.filter(filt_y*dy, normalize=False, color=color)
+
     if dx != 0 and dy != 0:
         if color == self.COLOR_RGB:
-            x.matrix[0] = np.uint8(np.sqrt(np.square(x.matrix[0]) + np.square(y.matrix[0])))
-            x.matrix[1] = np.uint8(np.sqrt(np.square(x.matrix[1]) + np.square(y.matrix[1])))
-            x.matrix[2] = np.uint8(np.sqrt(np.square(x.matrix[2]) + np.square(y.matrix[2])))
+            directions = [-1, -1, -1]
+            for i in range(3):
+                x.matrix[i], directions[i] = process_mat(x.matrix[i], y.matrix[i])
         else:
-            x.matrix[color] = np.uint8(np.sqrt(np.square(x.matrix[color]) + np.square(y.matrix[color])))
-        return x
+            x.matrix[color], directions = process_mat(x.matrix[color], y.matrix[color])
+        return x, directions
     elif dx != 0:
-        return x
+        return x, None
     else:
-        return y
+        return y, None
+
+def canny(self, minEdge=100, maxEdge=200, color=3):
+    """
+    """
+    # Gradient and edge direction calculation
+    B, directions = self.sobel(1, 1, color=color)
+
+    C = B.copy()
+
+    # Non-maximum suppression
+    mat = B.getMatrix(color)
+    for i in range(1, mat.shape[0]-1):
+        for j in range(1, mat.shape[1]-1):
+            if directions[i,j] == 0: # E-W edges
+                argmax = np.argmax([mat[i,j], mat[i,j-1], mat[i,j+1]])
+            elif directions[i,j] == 1: # SW-NE edges
+                argmax = np.argmax([mat[i,j], mat[i-1,j+1], mat[i+1,j-1]])
+            elif directions[i,j] == 2: # N-S edges
+                argmax = np.argmax([mat[i,j], mat[i-1,j], mat[i+1,j]])
+            elif directions[i,j] == 3: # NW-SE edges
+                argmax = np.argmax([mat[i,j], mat[i-1,j-1], mat[i+1,j+1]])
+
+            if argmax != 0:
+                C.matrix[color][i,j] = 0
+    
+    D = C.copy()
+    
+    # Hysteresis thresholding
+    C.matrix[color][C.matrix[color]<=minEdge] = 0
+    C.matrix[color][C.matrix[color]>=maxEdge] = 255
+    D.matrix[color][(0,-1),:] = 0
+    D.matrix[color][:,(0,-1)] = 0
+    for i in range(1, mat.shape[0]-1):
+        for j in range(1, mat.shape[1]-1):
+            if np.max(C.matrix[color][i-1:i+2,j-1:j+2]) == 255:
+                D.matrix[color][i,j] = 255
+            else:
+                D.matrix[color][i,j] = 0
+    print(np.unique(D.matrix[color]))
+
+    return D
