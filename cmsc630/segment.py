@@ -4,36 +4,73 @@ from time import time
 
 
 def kmeans(self, k, epochs=15, color=3):
-    """
+    """Segments the image into k pixel values using a k-means algorithm
+
+    Arguments:
+        k (int): Number of means, i.e. how many groups to segment the image into
+        epochs (int): Number of iterations, higher means more accurate (up to a point)
+        color (int): Desired color channel(s), see class color constants
+    
+    Returns:
+        A copy of the image segmented into k groups
     """
     B = self.copy()
 
     if color == self.COLOR_RGB:
-        B.matrix[self.COLOR_RED] = _kmeans(B.getMatrix(self.COLOR_RED), k, epochs, self.COLOR_RED)
-        B.matrix[self.COLOR_GREEN] = _kmeans(B.getMatrix(self.COLOR_GREEN), k, epochs, self.COLOR_GREEN)
-        B.matrix[self.COLOR_BLUE] = _kmeans(B.getMatrix(self.COLOR_BLUE), k, epochs, self.COLOR_BLUE)
+        B.matrix[self.COLOR_RED] = _kmeans(B.getMatrix(self.COLOR_RED), k, epochs)
+        B.matrix[self.COLOR_GREEN] = _kmeans(B.getMatrix(self.COLOR_GREEN), k, epochs)
+        B.matrix[self.COLOR_BLUE] = _kmeans(B.getMatrix(self.COLOR_BLUE), k, epochs)
     else:
-        B.matrix[color] = _kmeans(B.getMatrix(color), k, epochs, color)
+        B.matrix[color] = _kmeans(B.getMatrix(color), k, epochs)
     return B
-def _kmeans(b, k, epochs, color):
+def _kmeans(mat, k, epochs):
+    """Helper function to kmeans
+
+    Arguments:
+        mat (ndarray): The image matrix to segment
+        k (int): Number of means, i.e. how many groups to segment the image into
+        epochs (int): Number of iterations, higher means more accurate (up to a point)
+    
+    Returns:
+        The input matrix thresholded into k groups
     """
-    """
-    centers = np.random.choice(256, size=k)
+    centers = np.random.choice(256, size=k) # List of k mean values, randomly assigned
     for _ in range(epochs):
-        assignments = list(np.full(k, -1))
-        for row in b:
+        assignments = list(np.full(k, -1)) # k lists representing the pixels assigned to each mean
+        # For each pixel, assign it to its closest mean
+        for row in mat:
             for pixel in row:
                 closest_center = np.argmin(np.abs(centers-pixel))
                 if assignments[closest_center] == -1: assignments[closest_center] = list()
                 assignments[closest_center].append(pixel)
+        # Find the means that actually had values assigned to them, and update the
+        # centers to be the means of those new sets
         changed_indices = [i for i in range(len(assignments)) if assignments[i] != -1]
         for center in changed_indices:
             centers[center] = np.mean(assignments[center])
-    return _threshold(b, np.sort(centers))
+
+    # Setting each mean to be the middle point between itself and the next mean transforms
+    # our set of means into a set of cutoff points that can be passed to the threshold function
+    centers = np.sort(centers)
+    for i in range(centers.shape[0]-1):
+        centers[i] = (centers[i] + centers[i+1]) / 2
+    centers = centers[:-1]
+
+    return _threshold(mat, centers)
 
 
 def otsu(self, color=3):
-    """
+    """Segments the image into 2 groups using the Otsu method (see
+    https://en.wikipedia.org/wiki/Otsu%27s_method). Calculates the within
+    group variance for each possible threshold value and uses the minimum one
+
+    Arguments:
+        k (int): Number of means, i.e. how many groups to segment the image into
+        epochs (int): Number of iterations, higher means more accurate (up to a point)
+        color (int): Desired color channel(s), see class color constants
+    
+    Returns:
+        A copy of the image segmented into k groups
     """
     B = self.copy()
 
@@ -49,7 +86,14 @@ def otsu(self, color=3):
 
     return B
 def _otsu(mat, hist):
-    """
+    """Helper function to otsu
+
+    Arguments:
+        mat (ndarray): The image matrix to threshold
+        hist (ndarray): The histogram computed from the image matrix
+    
+    Returns:
+        The input matrix thresholded into 2 groups using the otsu method
     """
     wgv = np.zeros(256)
     for i in range(256):
