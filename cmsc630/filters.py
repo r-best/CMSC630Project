@@ -235,13 +235,13 @@ def canny(self, minEdge=100, maxEdge=200, color=3):
     B, directions = self.sobel(1, 1, color=color)
 
     if color == self.COLOR_RGB:
-        B.matrix[self.COLOR_RED] = _canny(B.getMatrix(self.COLOR_RED), directions[0], minEdge, maxEdge, self.COLOR_RED)
-        B.matrix[self.COLOR_GREEN] = _canny(B.getMatrix(self.COLOR_GREEN), directions[1], minEdge, maxEdge, self.COLOR_GREEN)
-        B.matrix[self.COLOR_BLUE] = _canny(B.getMatrix(self.COLOR_BLUE), directions[2], minEdge, maxEdge, self.COLOR_BLUE)
+        B.matrix[self.COLOR_RED] = _canny(B.getMatrix(self.COLOR_RED), directions[0], minEdge, maxEdge)
+        B.matrix[self.COLOR_GREEN] = _canny(B.getMatrix(self.COLOR_GREEN), directions[1], minEdge, maxEdge)
+        B.matrix[self.COLOR_BLUE] = _canny(B.getMatrix(self.COLOR_BLUE), directions[2], minEdge, maxEdge)
     else:
-        B.matrix[color] = _canny(B.getMatrix(color), directions, minEdge, maxEdge, color)
+        B.matrix[color] = _canny(B.getMatrix(color), directions, minEdge, maxEdge)
     return B
-def _canny(b, directions, minEdge, maxEdge, color):
+def _canny(b, directions, minEdge, maxEdge):
     c = np.copy(b)
 
     # Non-maximum suppression

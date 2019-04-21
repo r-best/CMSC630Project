@@ -24,3 +24,35 @@ steps:
   - name: saltnpeppernoise
     color: rgb | red | green | blue | gray
     rate: 0.30
+  - name: kmeans
+    color: rgb | red | green | blue | gray
+    k: 2
+    epochs: 10
+  - name: otsu
+    color: rgb | red | green | blue | gray
+  - name: canny
+    color: rgb | red | green | blue | gray
+    minEdge: 100
+    maxEdge: 200
+  - name: laplace
+    color: rgb | red | green | blue | gray
+  - name: prewitt
+    color: rgb | red | green | blue | gray
+    dx: -1 | 0 | 1
+    dy: -1 | 0 | 1
+  - name: sobel
+    color: rgb | red | green | blue | gray
+    dx: -1 | 0 | 1
+    dy: -1 | 0 | 1
+  - name: dilate
+    color: rgb | red | green | blue | gray
+    structure:
+      - 0 1 0
+      - 1 1 1
+      - 0 1 0
+  - name: erode
+    color: rgb | red | green | blue | gray
+    structure:
+      - 0 1 0
+      - 1 1 1
+      - 0 1 0

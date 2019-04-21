@@ -15,6 +15,9 @@ def dilate(self, structure, color=3):
     Returns:
         A copy of the image with its edges dilated
     """
+    if isinstance(structure, list):
+        structure = np.array(structure)
+
     structure[structure>0] = 255
     B = self.copy()
     if color == self.COLOR_RGB:
@@ -46,6 +49,9 @@ def _dilate(mat, structure):
 def erode(self, structure, color=3):
     """
     """
+    if isinstance(structure, list):
+        structure = np.array(structure)
+
     B = self.copy()
     if color == self.COLOR_RGB:
         B.matrix[self.COLOR_RED] = _erode(B.getMatrix(self.COLOR_RED), structure)

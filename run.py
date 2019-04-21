@@ -9,8 +9,8 @@ from pathos.pools import ProcessPool
 from cmsc630 import Image
 
 
-OPERATIONS = ['equalize', 'quantize', 'filter', 'gaussiannoise', 'saltnpeppernoise']
-PARALLEL_UNSAFE_OPS = ['filter']
+OPERATIONS = ['equalize', 'quantize', 'filter', 'gaussiannoise', 'saltnpeppernoise', 'kmeans', 'otsu', 'canny', 'laplace', 'prewitt', 'sobel', 'dilate', 'erode']
+PARALLEL_UNSAFE_OPS = ['filter', 'canny', 'laplace', 'prewitt', 'sobel']
 COLOR_MAP = {'red': 0, 'green': 1, 'blue': 2, 'rgb': 3, 'gray': 4}
 
 
@@ -192,6 +192,48 @@ def main():
                     rate=rate,
                     color=color
                 )
+            elif item['name'] == 'kmeans':
+                k = item['k']
+                epochs = item['epochs']
+                if not isinstance(k, int):
+                    raise ValueError("k must be an integer")
+                if not isinstance(epochs, int):
+                    raise ValueError("epochs must be an integer")
+                op = lambda img: img.kmeans(k, epochs=epochs, color=color)
+            elif item['name'] == 'otsu':
+                op = lambda img: img.otsu(color=color)
+            elif item['name'] == 'canny':
+                minEdge = item['minEdge']
+                maxEdge = item['maxEdge']
+                if not isinstance(minEdge, int):
+                    raise ValueError("minEdge must be an integer")
+                if not isinstance(maxEdge, int):
+                    raise ValueError("maxEdge must be an integer")
+                op = lambda img: img.canny(minEdge, maxEdge, color=color)
+            elif item['name'] == 'laplace':
+                op = lambda img: img.laplace(color=color)
+            elif item['name'] == 'prewitt':
+                dx = item['dx']
+                dy = item['dy']
+                if not isinstance(dx, int):
+                    raise ValueError("dx must be an integer")
+                if not isinstance(dy, int):
+                    raise ValueError("dy must be an integer")
+                op = lambda img: img.prewitt(dx, dy, color=color)[0]
+            elif item['name'] == 'sobel':
+                dx = item['dx']
+                dy = item['dy']
+                if not isinstance(dx, int):
+                    raise ValueError("dx must be an integer")
+                if not isinstance(dy, int):
+                    raise ValueError("dy must be an integer")
+                op = lambda img: img.sobel(dx, dy, color=color)[0]
+            elif item['name'] == 'dilate':
+                structure = parseFilter(item['structure'])
+                op = lambda img: img.dilate(structure, color=color)
+            elif item['name'] == 'erode':
+                structure = parseFilter(item['structure'])
+                op = lambda img: img.erode(structure, color=color)
             else: raise ValueError(f"operation name '{item['name']}' not recognized")
 
             # Add operation to list of operations to perform
