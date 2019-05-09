@@ -4,14 +4,15 @@ import numpy as np
 from sklearn import metrics
 
 
-def feature_extraction(images):
+def feature_extraction(images, save_to='dataset.csv'):
     """
-    1. number of black pixels
-    2. 
+    1. number of object pixels (for each color)
+    2. standard deviation of grayscale matrix
     3. 
     4. 
     """
-    x = np.zeros((len(images), 4))
+    logging.info(f"Extracting features from {len(images)} images...")
+    x = np.zeros((len(images), 5))
     y = np.zeros(len(images), dtype=np.int8)
 
     for i, image in enumerate(images):
@@ -22,8 +23,19 @@ def feature_extraction(images):
             else 4 if image.name.startswith('para')  \
             else 5 if image.name.startswith('super') \
             else 6 if image.name.startswith('svar') else -1
+        
+        # Get number of object pixels in segmented color channels, which become features 0-3
+        for color in [0,1,2,4]: # 3 is the color index for RGB so we skip that and use 4 (grayscale)
+            uniques, counts = np.unique(image.getMatrix(color), return_counts=True)
+            if len(uniques) > 2:
+                image = image.otsu(color)
+                uniques, counts = np.unique(image.getMatrix(color), return_counts=True)
+            x[i,color if color is not 4 else 3] = counts[0]
 
-        x[i,0] = np.unique(image.getMatrix(4), return_counts=True)[1][0]
+            x[i,4] = np.std(image.getHistogram(4))
+
+    # Save new dataset to file
+    np.savetxt(save_to, np.concatenate([x,np.atleast_2d(y).T], axis=1), delimiter=',', fmt='%s')
 
     return x, y
 
@@ -36,6 +48,7 @@ def cross_validate(cv, x, y, k=1):
     stepsize = int(len(x) / cv)
     metrics = np.zeros(4)
     for i in range(cv):
+        logging.info(f"Cross-validation fold {i+1}")
         x_train = x[indices[i*stepsize:(i+1)*stepsize]]
         y_train = y[indices[i*stepsize:(i+1)*stepsize]]
         for j in range(cv):
@@ -74,7 +87,7 @@ def knn(x, x_train, y_train, k=1):
 def evaluate(labels, gold):
     """
     """
-    num_labels = np.max(gold)+1
+    num_labels = np.max([np.max(labels),np.max(gold)])+1
 
     # Compute confusion matrix
     conf_matrix = np.zeros((num_labels, num_labels), dtype=np.int)
@@ -92,7 +105,6 @@ def evaluate(labels, gold):
         TN[i] = np.sum(conf_matrix[:i,:i]) + np.sum(conf_matrix[i+1:,:i]) + \
                     np.sum(conf_matrix[:i,i+1:]) + np.sum(conf_matrix[i+1:,i+1:])
         FN[i] = np.sum(conf_matrix[i,:i]) + np.sum(conf_matrix[i,i+1:])
-    print(np.sum(TP+TN+FP+FN), np.sum(conf_matrix))
     precision_micro = np.sum(TP) / np.sum(TP+FP)
     recall_micro = np.sum(TP) / np.sum(TP+FN)
     F1_micro = 2 * ((precision_micro * recall_micro) / (precision_micro + recall_micro))
