@@ -49,16 +49,22 @@ def cross_validate(cv, x, y, k=1):
     metrics = np.zeros(4)
     for i in range(cv):
         logging.info(f"Cross-validation fold {i+1}")
-        x_train = x[indices[i*stepsize:(i+1)*stepsize]]
-        y_train = y[indices[i*stepsize:(i+1)*stepsize]]
-        for j in range(cv):
-            if i == j: continue
-            test_start = j*stepsize
-            metrics += evaluate(
-                knn(x[indices[test_start:test_start+stepsize]], x_train, y_train, k),
-                y[indices[test_start:test_start+stepsize]]
-            )
-    metrics /= cv*(cv-1)
+
+        # Slice test set out of data
+        test_indices = indices[i*stepsize:i*stepsize+stepsize]
+        x_test = x[test_indices]
+        y_test = y[test_indices]
+
+        # Everything else is the training set
+        x_train = np.copy(x)
+        x_train = np.delete(x_train, test_indices, axis=0)
+        y_train = np.copy(y)
+        y_train = np.delete(y_train, test_indices, axis=0)
+
+        print(x_test.shape, x_train.shape)
+
+        metrics += evaluate(knn(x_test, x_train, y_train, k), y_test)
+    metrics /= cv
     print(metrics)
 
 
