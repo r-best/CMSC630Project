@@ -5,17 +5,29 @@ from sklearn import metrics
 
 
 def feature_extraction(images, save_to='dataset.csv'):
+    """Takes in an array of Image objects and returns a dataset constructed of
+    features representing them, detailed below
+    
+    1-4: number of object pixels (for each color)
+    5. standard deviation of grayscale histogram
+    6. The highest peak of the grayscale histogram
+    7. The lowest valley of the grayscale histogram
+
+    Arguments:
+        images (array-like): A list of Image objects to extract features from
+        save_to (string): Filepath to save the dataset to
+    
+    Returns:
+        x (ndarray): The dataset, (nxfeatures)
+        y (ndarray): The labels corresponding to the dataset samples, (,n)
     """
-    1. number of object pixels (for each color)
-    2. standard deviation of grayscale matrix
-    3. 
-    4. 
-    """
-    logging.info(f"Extracting features from {len(images)} images...")
-    x = np.zeros((len(images), 5))
-    y = np.zeros(len(images), dtype=np.int8)
+    num_images = len(images)
+    logging.info(f"Extracting features from {num_images} images...")
+    x = np.zeros((num_images, 7))
+    y = np.zeros(num_images, dtype=np.int8)
 
     for i, image in enumerate(images):
+        logging.info(f"Processing Image {i+1}/{num_images}...")
         y[i] =   0 if image.name.startswith('cyl')   \
             else 1 if image.name.startswith('inter') \
             else 2 if image.name.startswith('let')   \
@@ -34,6 +46,10 @@ def feature_extraction(images, save_to='dataset.csv'):
 
             x[i,4] = np.std(image.getHistogram(4))
 
+            x[i,5] = np.argmax(image.getHistogram(4))
+
+            x[i,6] = np.argmin(image.getHistogram(4))
+
     # Save new dataset to file
     np.savetxt(save_to, np.concatenate([x,np.atleast_2d(y).T], axis=1), delimiter=',', fmt='%s')
 
@@ -41,7 +57,18 @@ def feature_extraction(images, save_to='dataset.csv'):
 
 
 def cross_validate(cv, x, y, k=1):
-    """
+    """Takes in a dataset and a cross-validation value (cv) and performs cross-validation
+    by splitting up the dataset into cv segments and iteratively using one as the test set
+    and the rest as the training set, averaging the results at the end
+
+    Arguments:
+        cv (int): The number of folds, i.e. segments to divide the dataset into
+        x (ndarray): The dataset, (nxfeatures)
+        y (ndarray): The labels corresponding to the dataset samples, (,n)
+        k (int): The value of k to pass along to the k-nearest-neighbors algorithm
+    
+    Returns:
+        The averaged performance metrics across all folds (precision, recall, F1, accuracy)
     """
     indices = np.arange(len(x))
     np.random.shuffle(indices)
@@ -61,15 +88,26 @@ def cross_validate(cv, x, y, k=1):
         y_train = np.copy(y)
         y_train = np.delete(y_train, test_indices, axis=0)
 
-        print(x_test.shape, x_train.shape)
-
         metrics += evaluate(knn(x_test, x_train, y_train, k), y_test)
     metrics /= cv
+
     print(metrics)
+    return metrics
 
 
 def knn(x, x_train, y_train, k=1):
-    """
+    """Takes in a training and test dataset (samplesxfeatures matrices) and a set of
+    labels for the training set (samplesx1 matrix) and uses a k-nearest-neighbors
+    algorithm to classify the test samples, returning the labels in the corresponding order
+
+    Arguments:
+        x (ndarray): An (n,features) test dataset
+        x_train (ndarray): An (m,features) training dataset
+        y_train (ndarray): A (,m) array of labels for the training data
+        k (int): The nearest-neighbors number
+    
+    Returns:
+        An (,n) ndarray of predicted labels for the given test set
     """
     y_pred = np.zeros(len(x), dtype=np.int8)
     for i, sample in enumerate(x):
@@ -91,7 +129,15 @@ def knn(x, x_train, y_train, k=1):
 
 
 def evaluate(labels, gold):
-    """
+    """Takes in an array of predicted labels and a corresponding array of true gold
+    standard labels and computes performance metrics from them
+
+    Arguments:
+        labels (array-like): Predicted labels
+        gold (array-like): True labels
+    
+    Returns:
+        Micro-averaged precision, recall, F1, and accuracy metrics
     """
     num_labels = np.max([np.max(labels),np.max(gold)])+1
 
