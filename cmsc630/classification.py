@@ -1,7 +1,6 @@
 import random
 import logging
 import numpy as np
-from sklearn import metrics
 
 
 def feature_extraction(images, save_to='dataset.csv'):
@@ -120,7 +119,7 @@ def knn(x, x_train, y_train, k=1):
             closest = np.argmin(dist)
             k_nearest_labels.append(y_train[closest])
             dist.pop(closest)
-        
+
         # This sample's label the one the appears most frequently in
         # the k nearest, or the first nearest if all appear equally
         labels, counts = np.unique(k_nearest_labels, return_counts=True)
